@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1f6f5c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Ekip Dili</title>
+<style>
+  :root { --bg:#f6f5f1; --fg:#1d2420; --mut:#66706a; --card:#ffffff; --line:#d9dcd6; --acc:#1f6f5c; --accfg:#ffffff; --warn:#a15c00; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141917; --fg:#e8ece9; --mut:#93a09a; --card:#1c2320; --line:#2c3632; --acc:#4cc2a4; --accfg:#0d1512; --warn:#e0a84a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; max-width:640px; margin-inline:auto; }
+  h1 { font-size:1.3rem; margin:0 0 4px; }
+  h2 { font-size:1rem; margin:20px 0 6px; }
+  p.sub { margin:0 0 12px; color:var(--mut); font-size:.9rem; }
+  details { border:1px solid var(--line); border-radius:8px; background:var(--card); padding:8px 12px; }
+  summary { color:var(--mut); }
+  label { display:block; font-size:.85rem; color:var(--mut); margin:10px 0 4px; }
+  input, select, textarea { width:100%; padding:10px; font:inherit; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+  textarea { min-height:90px; resize:vertical; }
+  button { margin-top:12px; width:100%; padding:12px; font:inherit; font-weight:600; color:var(--accfg); background:var(--acc); border:0; border-radius:8px; }
+  button:disabled { opacity:.6; }
+  button.ghost { background:var(--card); color:var(--fg); border:1px solid var(--line); margin-top:6px; padding:8px; font-weight:400; text-align:left; }
+  .row { display:flex; gap:6px; }
+  .row button { margin-top:6px; }
+  #log div { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:6px; white-space:pre-wrap; word-wrap:break-word; font-size:.9rem; }
+  #log .warn { color:var(--warn); }
+  #log .ok { border-color:var(--acc); }
+  #log .role { background:none; border:0; padding:4px 0 0; color:var(--acc); font-weight:600; }
+  pre { white-space:pre-wrap; word-wrap:break-word; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px; font:inherit; font-size:.9rem; margin-top:6px; }
+  iframe { width:100%; height:420px; border:1px solid var(--line); border-radius:8px; margin-top:6px; background:#fff; }
+textarea.code{font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;min-height:300px;white-space:pre;overflow:auto}
+</style>
+</head>
+<body>
+<h1>Ekip Dili</h1>
+<p class="sub">Programlarını .ekip dosyası olarak kaydet ve aç. Uygulama olarak kurulunca internetsiz de açılır.</p>
+
+<details>
+  <summary>Ayarlar</summary>
+  <label for="prov">Ana sağlayıcı (diğeri yedek olur)</label>
+  <select id="prov"><option value="gemini">Gemini</option><option value="openrouter">OpenRouter</option></select>
+  <label for="model">Model adı</label>
+  <input id="model" autocomplete="off">
+  <label for="key">API anahtarı</label>
+  <input id="key" type="password" autocomplete="off">
+</details>
+
+<label for="ornek">Örnek program</label>
+<select id="ornek"><option value="">— bir örnek yükle —</option><option value="takim">Ekip programı (sayaç)</option><option value="hesap">Hesap (faktöriyel)</option><option value="liste">Listeler, metin, sözlük</option><option value="sozcuk">Sözcük ayırıcı (yorumlayıcının ilk parçası)</option><option value="yorum">Özyorumlayıcı: iç program çalıştırır (faktöriyel)</option><option value="yorumtakim">Özyorumlayıcı ile EKİP programı (sayaç)</option></select>
+<label for="prog">Program</label>
+<textarea id="prog" class="code" spellcheck="false">proje "Sayaç"
+ortam tarayici
+kisit tek_dosya
+kisit modul_yok
+
+# Kendi fonksiyonumuz: kodu test ettirip sonucu döndürür
+fonksiyon dene(istek, kod):
+    sonuc = test(istek, kod)
+    dondur sonuc
+
+istek = "Basit bir sayaç uygulaması yap: artı, eksi ve sıfırla düğmeleri olsun, telefonda güzel görünsün."
+plan = planlayici(istek)
+kaydet(plan, "plan.txt")
+kod = kodlayici(istek, plan, dosya="index.html")
+
+tur = 1
+tekrar 3 kez:
+    yaz "Tur " + tur + " başladı"
+    sonuc = dene(istek, kod)
+    eger sonuc.onay:
+        yaz "Onaylandı"
+        dur
+    degilse:
+        kod = kodlayici(istek, plan, dosya="index.html", geri=sonuc.sebep)
+    tur = tur + 1
+</textarea>
+<label for="girdi">Girdi (programın girdi() ile okuduğu metin; Özyorumlayıcı için iç program)</label>
+<textarea id="girdi" class="code" spellcheck="false" style="min-height:140px"># Bu program yukarıdaki yorumlayıcı tarafından çalıştırılır
+fonksiyon faktoriyel(n):
+    eger n <= 1:
+        dondur 1
+    dondur n * faktoriyel(n - 1)
+
+yaz "5! = " + faktoriyel(5)
+
+i = 1
+toplam = 0
+iken i <= 10:
+    toplam = toplam + i
+    i = i + 1
+yaz "1..10 toplamı: " + toplam
+</textarea>
+<div class="row"><button id="ac" class="ghost" style="text-align:center">Aç (.ekip)</button><button id="kaydetp" class="ghost" style="text-align:center">Kaydet (.ekip)</button></div>
+<input type="file" id="dosya" hidden>
+<button id="kur" class="ghost" style="text-align:center" hidden>Uygulama olarak kur</button>
+<div class="row"><button id="check" class="ghost" style="text-align:center">Denetle</button><button id="run">Çalıştır</button></div>
+
+<h2>Akış</h2>
+<div id="log"></div>
+
+<h2>Dosyalar</h2>
+<div id="files"></div>
+<button class="ghost" id="clear">Tüm dosyaları sil</button>
+<pre id="view" hidden></pre>
+<iframe id="prev" sandbox="allow-scripts" hidden></iframe>
+<pre id="errs" hidden></pre>
+<button id="fixbtn" hidden>Hataları kodlayıcıya ver</button>
+
+<script>
+var DEFAULT_MODEL = { gemini: "gemini-3.8-flash", openrouter: "nvidia/nemotron-3-ultra-550b-a55b:free" };
+var MAX_STEPS = 8, MAX_ROUNDS = 3;
+var $ = function (id) { return document.getElementById(id); };
+function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+/* ---------- Ayarlar ---------- */
+function fill() { var p = $("prov").value; $("key").value = load("key_" + p); $("model").value = load("model_" + p) || DEFAULT_MODEL[p]; }
+$("prov").value = load("prov") || "gemini";
+fill();
+$("prov").onchange = function () { save("prov", $("prov").value); fill(); };
+function cfg(p) {
+  if (p === $("prov").value) return { key: $("key").value.trim(), model: $("model").value.trim() };
+  return { key: load("key_" + p), model: load("model_" + p) || DEFAULT_MODEL[p] };
+}
+
+/* ---------- Model katmanı ---------- */
+async function askGemini(key, model, prompt) {
+  var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(key);
+  var r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+  var d = await r.json();
+  if (!r.ok) throw new Error((d.error && d.error.message) || r.status);
+  return d.candidates[0].content.parts.filter(function (p) { return p.text && !p.thought; })
+    .map(function (p) { return p.text; }).join("");
+}
+async function askOpenRouter(key, model, prompt) {
+  var r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+    body: JSON.stringify({ model: model, messages: [{ role: "user", content: prompt }] }) });
+  var d = await r.json();
+  if (!r.ok) throw new Error((d.error && d.error.message) || r.status);
+  return d.choices[0].message.content;
+}
+function ask(p, c, prompt) { return p === "gemini" ? askGemini(c.key, c.model, prompt) : askOpenRouter(c.key, c.model, prompt); }
+async function askSafe(prompt) {
+  var main = $("prov").value, order = [main, main === "gemini" ? "openrouter" : "gemini"], lastErr = "";
+  for (var i = 0; i < order.length; i++) {
+    var p = order[i], c = cfg(p);
+    if (!c.key) continue;
+    for (var t = 0; t < 2; t++) {
+      try { return await ask(p, c, prompt); }
+      catch (e) { lastErr = e.message; addLog(p + " hata verdi: " + lastErr, "warn"); await sleep(3000); }
+    }
+    if (i === 0) addLog("Yedek sağlayıcıya geçiliyor...", "warn");
+  }
+  throw new Error(lastErr || "Anahtar girilmemiş.");
+}
+
+/* ---------- Sanal dosya sistemi ---------- */
+var files = {};
+try { files = JSON.parse(load("ekip_files") || "{}"); } catch (e) { files = {}; }
+function saveFiles() { save("ekip_files", JSON.stringify(files)); renderFiles(); }
+function renderFiles() {
+  var box = $("files"); box.textContent = "";
+  var names = Object.keys(files);
+  if (!names.length) { box.textContent = "Henüz dosya yok."; return; }
+  names.forEach(function (n) {
+    var row = document.createElement("div"); row.className = "row";
+    var b = document.createElement("button"); b.className = "ghost"; b.textContent = n;
+    b.onclick = function () { $("prev").hidden = true; $("view").hidden = false; $("view").textContent = files[n]; };
+    row.appendChild(b);
+    if (/\.html?$/i.test(n)) {
+      var o = document.createElement("button"); o.className = "ghost"; o.style.width = "auto"; o.textContent = "Önizle";
+      o.onclick = function () {
+        errs = []; diag = ""; $("errs").hidden = true; $("fixbtn").hidden = true;
+        var h = files[n];
+        h = /<head[^>]*>/i.test(h) ? h.replace(/<head[^>]*>/i, function (m) { return m + HOOK; }) : HOOK + h;
+        $("view").hidden = true; $("prev").hidden = false; $("prev").srcdoc = h;
+      };
+      row.appendChild(o);
+    }
+    box.appendChild(row);
+  });
+}
+$("clear").onclick = function () { files = {}; saveFiles(); $("view").hidden = true; $("prev").hidden = true; };
+function runTool(a) {
+  if (a.arac === "dosya_yaz" && a.yol) { files[a.yol] = String(a.icerik || ""); saveFiles(); return "Yazıldı: " + a.yol; }
+  if (a.arac === "dosya_oku" && a.yol) { return a.yol in files ? files[a.yol] : "HATA: dosya yok."; }
+  if (a.arac === "dosyalari_listele") { return Object.keys(files).join(", ") || "(boş)"; }
+  return "HATA: bilinmeyen araç.";
+}
+function dump() {
+  return Object.keys(files).map(function (n) { return "=== " + n + " ===\n" + files[n]; }).join("\n\n") || "(hiç dosya yok)";
+}
+
+/* ---------- Yardımcılar ---------- */
+function parseAction(text) {
+  var s = text.indexOf("{"), e = text.lastIndexOf("}");
+  if (s < 0 || e < s) return null;
+  try { return JSON.parse(text.slice(s, e + 1)); } catch (x) { return null; }
+}
+function addLog(text, cls) {
+  var d = document.createElement("div"); if (cls) d.className = cls; d.textContent = text;
+  $("log").appendChild(d); d.scrollIntoView({ block: "nearest" });
+}
+
+/* ---------- Dil: sabitler ---------- */
+var TEMEL = "ORTAM: Her şey telefon tarayıcısında çalışmalı; sadece HTML, CSS ve JavaScript kullan. " +
+  "Unity, Unreal, C#, Node.js, derleme gerektiren hiçbir şey ve ek proje klasörleri KULLANMA. " +
+  "Yükleme ekranı kullanıyorsan oyun hazır olunca mutlaka gizle.";
+var KISIT = {
+  tek_dosya: "Tüm proje tek bir index.html dosyası olmalı.",
+  hafif: "Telefon eski ve zayıf: az poligon ve nesne, gölge yok, setPixelRatio(1), ağır hesap yok.",
+  modul_yok: "type=module, import ve importmap KULLANMA; sadece klasik script etiketi kullan.",
+  fizik_yok: "Fizik motoru (Cannon, Ammo vb.) KULLANMA; hareketi kendi basit kodunla yaz.",
+  three: 'Three.js gerekiyorsa SADECE şu etiketle yükle ve global THREE nesnesini kullan: <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>'
+};
+var AJANLAR = ["planlayici", "kodlayici", "test"];
+
+function norm(w) {
+  return w.replace(/İ/g, "i").replace(/I/g, "i").toLowerCase()
+    .replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u");
+}
+function str(rest) { var m = rest.match(/^"([\s\S]*)"$/); return m ? m[1] : null; }
+
+/* ---------- Dil v2: çekirdek ---------- */
+var RESERVED = ["proje", "ortam", "kisit", "eger", "degilse", "tekrar", "kez", "dur", "devam", "yaz", "degil", "dogru", "yanlis", "bos",
+  "fonksiyon", "dondur", "ve", "veya", "her", "icinde", "iken"];
+var FONKSIYON = {
+  planlayici: { min: 1, max: 2, kw: [], imza: "planlayici(istek)" },
+  kodlayici: { min: 1, max: 2, kw: ["dosya", "geri"], imza: 'kodlayici(istek, plan, dosya="index.html", geri=metin)' },
+  test: { min: 2, max: 2, kw: [], imza: "test(istek, kod)" },
+  kaydet: { min: 2, max: 2, kw: [], imza: 'kaydet(metin, "dosya.txt")' },
+  girdi: { min: 0, max: 0, kw: [], imza: "girdi()" },
+  kisit_ekle: { min: 1, max: 1, kw: [], imza: "kisit_ekle(ad)" }
+};
+
+function fail(n, m) { throw { n: n, m: m }; }
+function rtFail(n, m) { throw new Error("Satır " + n + ": " + m); }
+function yeniSozluk() { return Object.create(null); }
+function tipAdi(v) {
+  if (v === null) return "bos";
+  if (Array.isArray(v)) return "liste";
+  var t = typeof v;
+  return t === "number" ? "sayi" : t === "string" ? "metin" : t === "boolean" ? "mantik" : "sozluk";
+}
+function dogruMu(v) {
+  if (v === null || v === false || v === 0 || v === "") return false;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "object") return Object.keys(v).length > 0;
+  return true;
+}
+function gosterim(v) {
+  if (typeof v === "boolean") return v ? "doğru" : "yanlış";
+  if (v === null) return "bos";
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
+function indeksDuzelt(idx, len, n) {
+  if (typeof idx !== "number" || idx !== Math.floor(idx)) rtFail(n, "indeks tam sayı olmalı.");
+  if (idx < 0) idx += len;
+  if (idx < 0 || idx >= len) rtFail(n, "indeks aralık dışında (uzunluk " + len + ").");
+  return idx;
+}
+function metinMi(x, n, ad) { if (typeof x !== "string") rtFail(n, ad + "() metinle kullanılır."); return x; }
+function listeMi(x, n, ad) { if (!Array.isArray(x)) rtFail(n, ad + "() liste ile kullanılır."); return x; }
+function sozlukMu(x, n, ad) { if (x === null || typeof x !== "object" || Array.isArray(x)) rtFail(n, ad + "() sözlükle kullanılır."); return x; }
+function ky(a) { return Object.prototype.hasOwnProperty.call(this, a); }
+var YERLESIK = {
+  uzunluk: { min: 1, max: 1, imza: "uzunluk(x)", f: function (a, n) { var x = a[0]; if (typeof x === "string" || Array.isArray(x)) return x.length; if (x !== null && typeof x === "object") return Object.keys(x).length; rtFail(n, "uzunluk() metin, liste ya da sözlükle kullanılır."); } },
+  ekle: { min: 2, max: 2, imza: "ekle(liste, deger)", f: function (a, n) { listeMi(a[0], n, "ekle").push(a[1]); return a[0]; } },
+  cikar: { min: 1, max: 1, imza: "cikar(liste)", f: function (a, n) { if (!listeMi(a[0], n, "cikar").length) rtFail(n, "cikar() boş listeden çıkaramaz."); return a[0].pop(); } },
+  parca: { min: 3, max: 3, imza: "parca(x, bas, son)", f: function (a, n) { var x = a[0]; if (typeof x !== "string" && !Array.isArray(x)) rtFail(n, "parca() metin ya da listeyle kullanılır."); if (typeof a[1] !== "number" || typeof a[2] !== "number") rtFail(n, "parca() başlangıç ve son sayı olmalı."); return x.slice(a[1], a[2]); } },
+  bul: { min: 2, max: 2, imza: "bul(x, aranan)", f: function (a, n) { var x = a[0]; if (typeof x !== "string" && !Array.isArray(x)) rtFail(n, "bul() metin ya da listeyle kullanılır."); return x.indexOf(a[1]); } },
+  bol: { min: 2, max: 2, imza: "bol(metin, ayirac)", f: function (a, n) { return metinMi(a[0], n, "bol").split(metinMi(a[1], n, "bol")); } },
+  birlestir: { min: 2, max: 2, imza: "birlestir(liste, ayirac)", f: function (a, n) { return listeMi(a[0], n, "birlestir").map(gosterim).join(metinMi(a[1], n, "birlestir")); } },
+  sayi: { min: 1, max: 1, imza: "sayi(x)", f: function (a, n) { var v = typeof a[0] === "number" ? a[0] : parseFloat(a[0]); if (isNaN(v)) rtFail(n, "sayi() '" + gosterim(a[0]) + "' değerini sayıya çeviremedi."); return v; } },
+  metin: { min: 1, max: 1, imza: "metin(x)", f: function (a) { return gosterim(a[0]); } },
+  tip: { min: 1, max: 1, imza: "tip(x)", f: function (a) { return tipAdi(a[0]); } },
+  yuvarla: { min: 1, max: 1, imza: "yuvarla(sayi)", f: function (a, n) { if (typeof a[0] !== "number") rtFail(n, "yuvarla() sayıyla kullanılır."); return Math.round(a[0]); } },
+  anahtarlar: { min: 1, max: 1, imza: "anahtarlar(sozluk)", f: function (a, n) { return Object.keys(sozlukMu(a[0], n, "anahtarlar")); } },
+  var_mi: { min: 2, max: 2, imza: "var_mi(x, aranan)", f: function (a, n) { var x = a[0]; if (typeof x === "string") return x.indexOf(String(a[1])) >= 0; if (Array.isArray(x)) return x.indexOf(a[1]) >= 0; return Object.prototype.hasOwnProperty.call(sozlukMu(x, n, "var_mi"), String(a[1])); } },
+  sil: { min: 2, max: 2, imza: "sil(sozluk, anahtar)", f: function (a, n) { delete sozlukMu(a[0], n, "sil")[String(a[1])]; return a[0]; } },
+  kucuk: { min: 1, max: 1, imza: "kucuk(metin)", f: function (a, n) { return metinMi(a[0], n, "kucuk").toLowerCase(); } },
+  buyuk: { min: 1, max: 1, imza: "buyuk(metin)", f: function (a, n) { return metinMi(a[0], n, "buyuk").toUpperCase(); } },
+  harf_mi: { min: 1, max: 1, imza: "harf_mi(karakter)", f: function (a) { return typeof a[0] === "string" && /^[A-Za-zÇĞİÖŞÜçğıöşü_]$/.test(a[0]); } },
+  rakam_mi: { min: 1, max: 1, imza: "rakam_mi(karakter)", f: function (a) { return typeof a[0] === "string" && /^[0-9]$/.test(a[0]); } },
+  hata: { min: 1, max: 1, imza: "hata(mesaj)", f: function (a, n) { rtFail(n, "[iç program] " + gosterim(a[0])); } },
+  bosluk_mi: { min: 1, max: 1, imza: "bosluk_mi(karakter)", f: function (a) { return a[0] === " " || a[0] === "\t" || a[0] === "\n"; } }
+};
+function adAyrilmis(v) { return RESERVED.indexOf(v) >= 0 || !!FONKSIYON[v] || !!YERLESIK[v]; }
+
+function tokenize(text, n) {
+  var toks = [], i = 0, m;
+  while (i < text.length) {
+    var c = text.charAt(i);
+    if (c === " ") { i++; continue; }
+    if (c === "#") break;
+    if (c === '"') {
+      var j = i + 1, buf = "", closed = false;
+      while (j < text.length) {
+        var d = text.charAt(j);
+        if (d === "\\") { var x2 = text.charAt(j + 1); buf += x2 === "n" ? "\n" : x2 === "t" ? "\t" : x2; j += 2; continue; }
+        if (d === '"') { closed = true; break; }
+        buf += d; j++;
+      }
+      if (!closed) fail(n, "Tırnak kapatılmamış.");
+      toks.push({ t: "str", v: buf }); i = j + 1; continue;
+    }
+    var rest = text.slice(i);
+    if ((m = /^[0-9]+(\.[0-9]+)?/.exec(rest))) { toks.push({ t: "num", v: parseFloat(m[0]) }); i += m[0].length; continue; }
+    if ((m = /^[A-Za-zÇĞİÖŞÜçğıöşü_][A-Za-z0-9ÇĞİÖŞÜçğıöşü_]*/.exec(rest))) { toks.push({ t: "name", v: norm(m[0]), raw: m[0] }); i += m[0].length; continue; }
+    var two = text.substr(i, 2);
+    if (two === "==" || two === "!=" || two === "<=" || two === ">=") { toks.push({ t: "op", v: two }); i += 2; continue; }
+    if ("().,=:+-*/%<>[]{}".indexOf(c) >= 0) { toks.push({ t: "op", v: c }); i++; continue; }
+    fail(n, "Anlaşılmayan karakter: '" + c + "'");
+  }
+  return toks;
+}
+
+function isOp(S, v) { var x = S.t[S.i]; return !!x && x.t === "op" && x.v === v; }
+function isOpIn(S, list) { var x = S.t[S.i]; return !!x && x.t === "op" && list.indexOf(x.v) >= 0; }
+function isWord(S, v) { var x = S.t[S.i]; return !!x && x.t === "name" && x.v === v; }
+function expectOp(S, v) { if (!isOp(S, v)) fail(S.n, "'" + v + "' bekleniyordu."); S.i++; }
+
+function pExpr(S) { return pOr(S); }
+function pOr(S) {
+  var l = pAnd(S);
+  while (isWord(S, "veya")) { S.i++; l = { k: "logic", op: "veya", l: l, r: pAnd(S) }; }
+  return l;
+}
+function pAnd(S) {
+  var l = pNot(S);
+  while (isWord(S, "ve")) { S.i++; l = { k: "logic", op: "ve", l: l, r: pNot(S) }; }
+  return l;
+}
+function pNot(S) {
+  if (isWord(S, "degil")) { S.i++; return { k: "not", e: pNot(S) }; }
+  return pCmp(S);
+}
+function pCmp(S) {
+  var l = pAdd(S);
+  if (isOpIn(S, ["==", "!=", "<", ">", "<=", ">="])) { var op = S.t[S.i].v; S.i++; return { k: "cmp", op: op, l: l, r: pAdd(S), n: S.n }; }
+  return l;
+}
+function pAdd(S) {
+  var l = pMul(S);
+  while (isOpIn(S, ["+", "-"])) { var op = S.t[S.i].v; S.i++; l = { k: "bin", op: op, l: l, r: pMul(S), n: S.n }; }
+  return l;
+}
+function pMul(S) {
+  var l = pUnary(S);
+  while (isOpIn(S, ["*", "/", "%"])) { var op = S.t[S.i].v; S.i++; l = { k: "bin", op: op, l: l, r: pUnary(S), n: S.n }; }
+  return l;
+}
+function pUnary(S) {
+  if (isOp(S, "-")) { S.i++; return { k: "neg", e: pUnary(S), n: S.n }; }
+  return pPrim(S);
+}
+function pPrim(S) {
+  var x = S.t[S.i], e;
+  if (!x) fail(S.n, "İfade yarım kaldı.");
+  S.i++;
+  if (x.t === "str") e = { k: "str", v: x.v };
+  else if (x.t === "num") e = { k: "num", v: x.v };
+  else if (x.t === "op" && x.v === "(") { e = pExpr(S); expectOp(S, ")"); }
+  else if (x.t === "op" && x.v === "[") {
+    var items = [];
+    while (!isOp(S, "]")) {
+      items.push(pExpr(S));
+      if (isOp(S, ",")) S.i++; else if (!isOp(S, "]")) fail(S.n, "',' ya da ']' bekleniyordu.");
+    }
+    S.i++; e = { k: "list", items: items };
+  } else if (x.t === "op" && x.v === "{") {
+    var pairs = [];
+    while (!isOp(S, "}")) {
+      var ke = pExpr(S); expectOp(S, ":"); var ve2 = pExpr(S);
+      pairs.push([ke, ve2]);
+      if (isOp(S, ",")) S.i++; else if (!isOp(S, "}")) fail(S.n, "',' ya da '}' bekleniyordu.");
+    }
+    S.i++; e = { k: "dict", pairs: pairs };
+  } else if (x.t === "name") {
+    if (x.v === "dogru" || x.v === "yanlis") e = { k: "bool", v: x.v === "dogru" };
+    else if (x.v === "bos") e = { k: "null" };
+    else if (isOp(S, "(")) {
+      S.i++;
+      var args = [], kw = {}, hasKw = false;
+      while (!isOp(S, ")")) {
+        var a = S.t[S.i], b = S.t[S.i + 1];
+        if (a && a.t === "name" && b && b.t === "op" && b.v === "=") { S.i += 2; kw[a.v] = pExpr(S); hasKw = true; }
+        else { if (hasKw) fail(S.n, "İsimli parametreden sonra düz parametre yazılamaz."); args.push(pExpr(S)); }
+        if (isOp(S, ",")) S.i++; else if (!isOp(S, ")")) fail(S.n, "',' ya da ')' bekleniyordu.");
+      }
+      S.i++;
+      e = { k: "call", name: x.v, raw: x.raw, args: args, kw: kw, n: S.n };
+    } else e = { k: "var", name: x.v, raw: x.raw, n: S.n };
+  } else fail(S.n, "Beklenmeyen '" + x.v + "'.");
+  while (isOp(S, ".") || isOp(S, "[")) {
+    if (isOp(S, ".")) {
+      S.i++;
+      var nm = S.t[S.i];
+      if (!nm || nm.t !== "name") fail(S.n, "'.' işaretinden sonra bir ad gelmeli.");
+      S.i++; e = { k: "attr", obj: e, name: nm.v, n: S.n };
+    } else {
+      S.i++; var ix = pExpr(S); expectOp(S, "]");
+      e = { k: "index", obj: e, idx: ix, n: S.n };
+    }
+  }
+  return e;
+}
+
+/* ---------- Dil v2: okuyucu ---------- */
+function parseProgram(src) {
+  var errors = [], lines = [], pos = 0;
+  src.split("\n").forEach(function (raw, idx) {
+    var t = raw.replace(/\t/g, "    ");
+    if (!t.trim() || /^\s*#/.test(t)) return;
+    lines.push({ n: idx + 1, indent: t.match(/^ */)[0].length, text: t.trim() });
+  });
+
+  function block(level, hn) {
+    if (pos >= lines.length || lines[pos].indent <= level) fail(hn, "':' işaretinden sonra girintili bir blok gerekli.");
+    return parseStatements(lines[pos].indent);
+  }
+  function parseStatements(level) {
+    var out = [];
+    while (pos < lines.length) {
+      var ln = lines[pos];
+      if (ln.indent < level) break;
+      var start = pos;
+      if (ln.indent > level) {
+        errors.push("Satır " + ln.n + ": beklenmeyen girinti.");
+        pos++; while (pos < lines.length && lines[pos].indent > level) pos++;
+        continue;
+      }
+      try { var st = parseStmt(ln, level); if (st) out.push(st); }
+      catch (e) {
+        if (e.m === undefined) throw e;
+        errors.push("Satır " + e.n + ": " + e.m);
+        pos = start + 1; while (pos < lines.length && lines[pos].indent > level) pos++;
+      }
+    }
+    return out;
+  }
+  function badName(tok) { return adAyrilmis(tok.v); }
+  function parseStmt(ln, level) {
+    var n = ln.n, toks = tokenize(ln.text, n), S = { t: toks, i: 0, n: n }, h = toks[0];
+    pos++;
+    if (!h) return null;
+    function eol() { if (S.i < S.t.length) fail(n, "Satırın sonunda fazlalık var: '" + (S.t[S.i].raw || S.t[S.i].v) + "'."); }
+    if (h.t === "name") {
+      var kw = h.v;
+      if (kw === "proje" || kw === "ortam" || kw === "kisit") {
+        if (level !== 0) fail(n, "'" + kw + "' sadece en üstte yazılabilir.");
+        var v = S.t[1];
+        if (kw === "proje") {
+          if (!v || v.t !== "str" || !v.v) fail(n, 'proje "Ad" biçiminde yazılmalı.');
+        } else if (kw === "ortam") {
+          if (!v || v.t !== "name" || v.v !== "tarayici") fail(n, "ortam şimdilik sadece 'tarayici' olabilir.");
+        } else if (!v || v.t !== "name" || !KISIT[v.v]) fail(n, "Bilinmeyen kısıt. Olanlar: " + Object.keys(KISIT).join(", "));
+        S.i = 2; eol();
+        return { k: kw, v: v.v, n: n };
+      }
+      if (kw === "fonksiyon") {
+        if (level !== 0) fail(n, "fonksiyon sadece en üstte tanımlanabilir.");
+        var fnm = S.t[1];
+        if (!fnm || fnm.t !== "name") fail(n, "fonksiyon adı bekleniyordu. Örnek: fonksiyon topla(a, b):");
+        if (badName(fnm)) fail(n, "'" + fnm.raw + "' ayrılmış bir kelime, fonksiyon adı olamaz.");
+        S.i = 2; expectOp(S, "(");
+        var params = [];
+        while (!isOp(S, ")")) {
+          var pt = S.t[S.i];
+          if (!pt || pt.t !== "name") fail(n, "parametre adı bekleniyordu.");
+          if (badName(pt)) fail(n, "'" + pt.raw + "' ayrılmış bir kelime, parametre adı olamaz.");
+          if (params.indexOf(pt.v) >= 0) fail(n, "'" + pt.raw + "' parametresi iki kez yazılmış.");
+          params.push(pt.v); S.i++;
+          if (isOp(S, ",")) S.i++; else if (!isOp(S, ")")) fail(n, "',' ya da ')' bekleniyordu.");
+        }
+        S.i++; expectOp(S, ":"); eol();
+        return { k: "def", name: fnm.v, raw: fnm.raw, params: params, body: block(level, n), n: n };
+      }
+      if (kw === "dondur") { S.i = 1; var re = S.t[1] ? pExpr(S) : null; eol(); return { k: "ret", e: re, n: n }; }
+      if (kw === "dur") { S.i = 1; eol(); return { k: "break", n: n }; }
+      if (kw === "devam") { S.i = 1; eol(); return { k: "continue", n: n }; }
+      if (kw === "yaz") { S.i = 1; var ye = pExpr(S); eol(); return { k: "say", e: ye, n: n }; }
+      if (kw === "eger") {
+        S.i = 1; var cond = pExpr(S); expectOp(S, ":"); eol();
+        var body = block(level, n), els = null;
+        if (pos < lines.length && lines[pos].indent === level) {
+          var nt = tokenize(lines[pos].text, lines[pos].n);
+          if (nt[0] && nt[0].t === "name" && nt[0].v === "degilse") {
+            var dn = lines[pos].n;
+            if (!(nt.length === 2 && nt[1].t === "op" && nt[1].v === ":")) fail(dn, "'degilse:' biçiminde yazılmalı.");
+            pos++; els = block(level, dn);
+          }
+        }
+        return { k: "if", cond: cond, body: body, els: els, n: n };
+      }
+      if (kw === "degilse") fail(n, "'degilse' sadece bir 'eger' bloğundan hemen sonra gelebilir.");
+      if (kw === "iken") {
+        S.i = 1; var wc = pExpr(S); expectOp(S, ":"); eol();
+        return { k: "while", cond: wc, body: block(level, n), n: n };
+      }
+      if (kw === "her") {
+        var vt = S.t[1], it = S.t[2];
+        if (!vt || vt.t !== "name") fail(n, "her'den sonra bir değişken adı gelmeli. Örnek: her x icinde liste:");
+        if (badName(vt)) fail(n, "'" + vt.raw + "' ayrılmış bir kelime, değişken adı olamaz.");
+        if (!it || it.t !== "name" || it.v !== "icinde") fail(n, "'icinde' kelimesi bekleniyordu. Örnek: her x icinde liste:");
+        S.i = 3; var iter = pExpr(S); expectOp(S, ":"); eol();
+        return { k: "for", name: vt.v, raw: vt.raw, iter: iter, body: block(level, n), n: n };
+      }
+      if (kw === "tekrar") {
+        var cnt = S.t[1], kz = S.t[2];
+        if (!cnt || cnt.t !== "num") fail(n, "tekrar sayısı bir sayı olmalı. Örnek: tekrar 3 kez:");
+        if (!kz || kz.t !== "name" || kz.v !== "kez") fail(n, "'kez' kelimesi bekleniyordu. Örnek: tekrar 3 kez:");
+        S.i = 3; expectOp(S, ":"); eol();
+        if (cnt.v < 1 || cnt.v > 10 || cnt.v !== Math.floor(cnt.v)) fail(n, "tekrar sayısı 1 ile 10 arasında bir tam sayı olmalı.");
+        return { k: "loop", count: cnt.v, body: block(level, n), n: n };
+      }
+      var nx = S.t[1];
+      if (nx && nx.t === "op" && nx.v === "=") {
+        if (badName(h)) fail(n, "'" + h.raw + "' ayrılmış bir kelime, değişken adı olamaz.");
+        S.i = 2; var ex = pExpr(S); eol();
+        return { k: "assign", name: kw, raw: h.raw, e: ex, n: n };
+      }
+    }
+    S.i = 0; var ce = pExpr(S);
+    if (ce.k === "index" && isOp(S, "=")) {
+      S.i++; var sv = pExpr(S); eol();
+      return { k: "setindex", target: ce, e: sv, n: n };
+    }
+    eol();
+    if (ce.k !== "call") fail(n, "Bu satır bir şey yapmıyor. Atama ya da fonksiyon çağrısı yazmalısın.");
+    return { k: "expr", e: ce, n: n };
+  }
+
+  var all = parseStatements(0);
+  var P = { ad: "", ortam: "", kisitlar: [], stmts: [], defs: {} };
+  all.forEach(function (s) {
+    if (s.k === "proje") { if (P.ad) errors.push("Satır " + s.n + ": proje iki kez yazılmış."); P.ad = s.v; }
+    else if (s.k === "ortam") P.ortam = s.v;
+    else if (s.k === "kisit") { if (P.kisitlar.indexOf(s.v) < 0) P.kisitlar.push(s.v); }
+    else if (s.k === "def") {
+      if (P.defs[s.name]) errors.push("Satır " + s.n + ": '" + s.raw + "' fonksiyonu iki kez tanımlanmış.");
+      else P.defs[s.name] = s;
+    } else P.stmts.push(s);
+  });
+  if (!P.ad) errors.push("'proje \"Ad\"' satırı eksik.");
+  if (!P.ortam) errors.push("'ortam tarayici' satırı eksik.");
+  if (!P.stmts.length) errors.push("Programda çalışacak hiçbir komut yok (fonksiyon tanımı tek başına yetmez).");
+  var ctx = { errors: errors, defs: P.defs, inFunc: false };
+  Object.keys(P.defs).forEach(function (k) {
+    var d = P.defs[k], sc = {};
+    d.params.forEach(function (p) { sc[p] = true; });
+    ctx.inFunc = true; checkBlock(d.body, sc, false, ctx);
+  });
+  ctx.inFunc = false; checkBlock(P.stmts, {}, false, ctx);
+  return { prog: P, errors: errors };
+}
+
+/* ---------- Dil v2: denetleyici ---------- */
+function checkExpr(e, scope, ctx) {
+  var errors = ctx.errors;
+  if (e.k === "var") { if (!scope[e.name]) errors.push("Satır " + e.n + ": '" + e.raw + "' değişkeni henüz tanımlanmadı." + (ctx.inFunc ? " (Fonksiyonlar dışarıdaki değişkenleri görmez, parametre olarak ver.)" : "")); }
+  else if (e.k === "attr") checkExpr(e.obj, scope, ctx);
+  else if (e.k === "index") { checkExpr(e.obj, scope, ctx); checkExpr(e.idx, scope, ctx); }
+  else if (e.k === "list") e.items.forEach(function (x) { checkExpr(x, scope, ctx); });
+  else if (e.k === "dict") e.pairs.forEach(function (p) { checkExpr(p[0], scope, ctx); checkExpr(p[1], scope, ctx); });
+  else if (e.k === "not" || e.k === "neg") checkExpr(e.e, scope, ctx);
+  else if (e.k === "cmp" || e.k === "bin" || e.k === "logic") { checkExpr(e.l, scope, ctx); checkExpr(e.r, scope, ctx); }
+  else if (e.k === "call") {
+    var sp = FONKSIYON[e.name], ud = ctx.defs[e.name], yl = YERLESIK[e.name];
+    if (ud) {
+      if (e.args.length !== ud.params.length) errors.push("Satır " + e.n + ": '" + e.raw + "' " + ud.params.length + " parametre bekliyor: " + ud.raw + "(" + ud.params.join(", ") + ")");
+      if (Object.keys(e.kw).length) errors.push("Satır " + e.n + ": kendi fonksiyonlarında isimli parametre kullanılamaz.");
+    } else if (yl) {
+      if (e.args.length < yl.min || e.args.length > yl.max) errors.push("Satır " + e.n + ": '" + e.raw + "' yanlış sayıda parametre aldı. Doğrusu: " + yl.imza);
+      if (Object.keys(e.kw).length) errors.push("Satır " + e.n + ": '" + e.raw + "' isimli parametre almaz. Doğrusu: " + yl.imza);
+    } else if (!sp) errors.push("Satır " + e.n + ": bilinmeyen fonksiyon '" + e.raw + "'. Hazır olanlar: " + Object.keys(YERLESIK).concat(Object.keys(FONKSIYON)).concat(Object.keys(ctx.defs)).join(", "));
+    else {
+      if (e.args.length < sp.min || e.args.length > sp.max) errors.push("Satır " + e.n + ": '" + e.raw + "' yanlış sayıda parametre aldı. Doğrusu: " + sp.imza);
+      Object.keys(e.kw).forEach(function (k) { if (sp.kw.indexOf(k) < 0) errors.push("Satır " + e.n + ": '" + e.raw + "' için '" + k + "' parametresi yok. Doğrusu: " + sp.imza); });
+    }
+    e.args.forEach(function (a) { checkExpr(a, scope, ctx); });
+    Object.keys(e.kw).forEach(function (k) { checkExpr(e.kw[k], scope, ctx); });
+  }
+}
+function checkBlock(stmts, scope, inLoop, ctx) {
+  var errors = ctx.errors;
+  stmts.forEach(function (s) {
+    if (s.k === "assign") {
+      checkExpr(s.e, scope, ctx);
+      if (ctx.defs[s.name]) errors.push("Satır " + s.n + ": '" + s.raw + "' bir fonksiyon adı, değişken adı olamaz.");
+      scope[s.name] = true;
+    } else if (s.k === "setindex") { checkExpr(s.target.obj, scope, ctx); checkExpr(s.target.idx, scope, ctx); checkExpr(s.e, scope, ctx); }
+    else if (s.k === "expr" || s.k === "say") checkExpr(s.e, scope, ctx);
+    else if (s.k === "ret") {
+      if (!ctx.inFunc) errors.push("Satır " + s.n + ": 'dondur' sadece fonksiyonun içinde kullanılabilir.");
+      if (s.e) checkExpr(s.e, scope, ctx);
+    } else if (s.k === "break" || s.k === "continue") { if (!inLoop) errors.push("Satır " + s.n + ": '" + (s.k === "break" ? "dur" : "devam") + "' sadece bir döngünün içinde kullanılabilir."); }
+    else if (s.k === "if") {
+      checkExpr(s.cond, scope, ctx);
+      checkBlock(s.body, scope, inLoop, ctx);
+      if (s.els) checkBlock(s.els, scope, inLoop, ctx);
+    } else if (s.k === "loop") checkBlock(s.body, scope, true, ctx);
+    else if (s.k === "while") { checkExpr(s.cond, scope, ctx); checkBlock(s.body, scope, true, ctx); }
+    else if (s.k === "for") {
+      checkExpr(s.iter, scope, ctx);
+      if (ctx.defs[s.name]) errors.push("Satır " + s.n + ": '" + s.raw + "' bir fonksiyon adı, değişken adı olamaz.");
+      scope[s.name] = true; checkBlock(s.body, scope, true, ctx);
+    }
+  });
+}
+
+/* ---------- Dil v2: yorumlayıcı ---------- */
+async function callUser(d, args, env, n) {
+  if (env.derinlik >= (env.derinlikLimit || 30)) rtFail(n, "Fonksiyon çağrıları çok derine indi (en fazla " + (env.derinlikLimit || 30) + "), program durduruldu.");
+  var loc = {};
+  d.params.forEach(function (p, i) { loc[p] = args[i]; });
+  env.derinlik++;
+  var r;
+  try { r = await execBlock(d.body, loc, env); } finally { env.derinlik--; }
+  return (r && typeof r === "object") ? r.ret : "";
+}
+function esitMi(l, r) {
+  if (l !== null && r !== null && typeof l === "object" && typeof r === "object") return JSON.stringify(l) === JSON.stringify(r);
+  return l === r;
+}
+async function evalExpr(e, vars, env) {
+  if (e.k === "str" || e.k === "num" || e.k === "bool") return e.v;
+  if (e.k === "null") return null;
+  if (e.k === "var") { if (!(e.name in vars)) rtFail(e.n, "'" + e.raw + "' değişkeni tanımlı değil."); return vars[e.name]; }
+  if (e.k === "list") { var out = []; for (var q = 0; q < e.items.length; q++) out.push(await evalExpr(e.items[q], vars, env)); return out; }
+  if (e.k === "dict") {
+    var dd = yeniSozluk();
+    for (var w = 0; w < e.pairs.length; w++) {
+      var kk = await evalExpr(e.pairs[w][0], vars, env);
+      dd[String(kk)] = await evalExpr(e.pairs[w][1], vars, env);
+    }
+    return dd;
+  }
+  if (e.k === "attr") {
+    var o = await evalExpr(e.obj, vars, env);
+    if (o === null || typeof o !== "object" || Array.isArray(o)) rtFail(e.n, "'" + e.name + "' özelliği bu değerde yok (sözlük bekleniyordu).");
+    if (!(e.name in o)) rtFail(e.n, "sözlükte '" + e.name + "' anahtarı yok.");
+    return o[e.name];
+  }
+  if (e.k === "index") {
+    var ob = await evalExpr(e.obj, vars, env), ix = await evalExpr(e.idx, vars, env);
+    if (typeof ob === "string" || Array.isArray(ob)) return ob[indeksDuzelt(ix, ob.length, e.n)];
+    if (ob !== null && typeof ob === "object") {
+      if (!Object.prototype.hasOwnProperty.call(ob, String(ix))) rtFail(e.n, "sözlükte '" + gosterim(ix) + "' anahtarı yok (var_mi ile önce bak).");
+      return ob[String(ix)];
+    }
+    rtFail(e.n, "Bu değer indekslenemez (metin, liste ya da sözlük olmalı).");
+  }
+  if (e.k === "not") return !dogruMu(await evalExpr(e.e, vars, env));
+  if (e.k === "neg") {
+    var nv = await evalExpr(e.e, vars, env);
+    if (typeof nv !== "number") rtFail(e.n, "Eksi işareti sadece sayıyla kullanılabilir.");
+    return -nv;
+  }
+  if (e.k === "logic") {
+    var ll = await evalExpr(e.l, vars, env);
+    if (e.op === "veya") return dogruMu(ll) ? ll : await evalExpr(e.r, vars, env);
+    return dogruMu(ll) ? await evalExpr(e.r, vars, env) : ll;
+  }
+  if (e.k === "cmp") {
+    var l = await evalExpr(e.l, vars, env), r = await evalExpr(e.r, vars, env);
+    if (e.op === "==") return esitMi(l, r);
+    if (e.op === "!=") return !esitMi(l, r);
+    if (typeof l !== typeof r || (typeof l !== "number" && typeof l !== "string")) rtFail(e.n, "'" + e.op + "' ile sadece iki sayı ya da iki metin karşılaştırılabilir.");
+    return e.op === "<" ? l < r : e.op === ">" ? l > r : e.op === "<=" ? l <= r : l >= r;
+  }
+  if (e.k === "bin") {
+    var a = await evalExpr(e.l, vars, env), b = await evalExpr(e.r, vars, env);
+    if (e.op === "+") {
+      if (typeof a === "number" && typeof b === "number") return a + b;
+      if (Array.isArray(a) && Array.isArray(b)) return a.concat(b);
+      return gosterim(a) + gosterim(b);
+    }
+    if (typeof a !== "number" || typeof b !== "number") rtFail(e.n, "'" + e.op + "' sadece sayılarla kullanılabilir.");
+    if (e.op === "-") return a - b;
+    if (e.op === "*") return a * b;
+    if (b === 0) rtFail(e.n, "Sıfıra bölme.");
+    return e.op === "/" ? a / b : a % b;
+  }
+  if (e.k === "call") {
+    var args = [], kw = {};
+    for (var i = 0; i < e.args.length; i++) args.push(await evalExpr(e.args[i], vars, env));
+    var ks = Object.keys(e.kw);
+    for (var j = 0; j < ks.length; j++) kw[ks[j]] = await evalExpr(e.kw[ks[j]], vars, env);
+    var ud = env.defs && env.defs[e.name];
+    if (ud) return await callUser(ud, args, env, e.n);
+    if (YERLESIK[e.name]) return YERLESIK[e.name].f(args, e.n);
+    env.sayac++;
+    if (env.sayac > env.limit) rtFail(e.n, "En fazla " + env.limit + " ajan çağrısı yapılabilir, program durduruldu.");
+    return await env.fn[e.name](args, kw, e.n);
+  }
+  return undefined;
+}
+function dongu(r) { return r === "break" ? 1 : r === "continue" ? 0 : r ? 2 : 0; }
+async function execBlock(stmts, vars, env) {
+  for (var i = 0; i < stmts.length; i++) {
+    var s = stmts[i];
+    if (++env.adim > env.adimLimit) rtFail(s.n, "Program çok uzun sürdü (" + env.adimLimit + " adım), durduruldu.");
+    if (s.k === "assign") vars[s.name] = await evalExpr(s.e, vars, env);
+    else if (s.k === "setindex") {
+      var ob = await evalExpr(s.target.obj, vars, env), ix = await evalExpr(s.target.idx, vars, env), val = await evalExpr(s.e, vars, env);
+      if (Array.isArray(ob)) ob[indeksDuzelt(ix, ob.length, s.n)] = val;
+      else if (ob !== null && typeof ob === "object") ob[String(ix)] = val;
+      else rtFail(s.n, "İndeksle atama sadece liste ya da sözlükte yapılabilir.");
+    }
+    else if (s.k === "expr") await evalExpr(s.e, vars, env);
+    else if (s.k === "say") addLog(gosterim(await evalExpr(s.e, vars, env)).slice(0, 600));
+    else if (s.k === "ret") return { ret: s.e ? await evalExpr(s.e, vars, env) : "" };
+    else if (s.k === "break") return "break";
+    else if (s.k === "continue") return "continue";
+    else if (s.k === "if") {
+      var c = await evalExpr(s.cond, vars, env);
+      var r = await execBlock(dogruMu(c) ? s.body : (s.els || []), vars, env);
+      if (r) return r;
+    } else if (s.k === "loop") {
+      for (var t = 1; t <= s.count; t++) {
+        addLog("— tekrar " + t + "/" + s.count + " —", "role");
+        var r2 = await execBlock(s.body, vars, env), d2 = dongu(r2);
+        if (d2 === 1) break;
+        if (d2 === 2) return r2;
+      }
+    } else if (s.k === "while") {
+      while (dogruMu(await evalExpr(s.cond, vars, env))) {
+        if (++env.adim > env.adimLimit) rtFail(s.n, "Program çok uzun sürdü (" + env.adimLimit + " adım), durduruldu.");
+        var r3 = await execBlock(s.body, vars, env), d3 = dongu(r3);
+        if (d3 === 1) break;
+        if (d3 === 2) return r3;
+      }
+    } else if (s.k === "for") {
+      var it = await evalExpr(s.iter, vars, env), items;
+      if (Array.isArray(it)) items = it.slice();
+      else if (typeof it === "string") items = it.split("");
+      else if (it !== null && typeof it === "object") items = Object.keys(it);
+      else rtFail(s.n, "'her' sadece liste, metin ya da sözlük üzerinde dönebilir.");
+      for (var f = 0; f < items.length; f++) {
+        vars[s.name] = items[f];
+        var r4 = await execBlock(s.body, vars, env), d4 = dongu(r4);
+        if (d4 === 1) break;
+        if (d4 === 2) return r4;
+      }
+    }
+  }
+  return "";
+}
+/* ---------- Dil v2: çekirdek sonu ---------- */
+
+/* ---------- Dil v2: ajanlar ve çalıştırma ---------- */
+async function runProgram(P) {
+  files = {}; saveFiles(); $("view").hidden = true; $("prev").hidden = true;
+  var rules = makeRules(P), ekKisit = [];
+  lastRules = rules; lastIstek = "";
+  var fn = {
+    girdi: async function () { return $("girdi").value; },
+    kisit_ekle: async function (a) {
+      var k = norm(String(a[0]));
+      if (!KISIT[k]) throw new Error("Bilinmeyen kısıt: '" + a[0] + "'. Olanlar: " + Object.keys(KISIT).join(", "));
+      if (ekKisit.indexOf(k) < 0) ekKisit.push(k);
+      rules = makeRules({ kisitlar: P.kisitlar.concat(ekKisit) }); lastRules = rules;
+      addLog("Kısıt eklendi: " + k); return true;
+    },
+    planlayici: async function (a) {
+      addLog("PLANLAYICI", "role");
+      var plan = await planner(String(a[0]), rules, a[1] ? String(a[1]) : "");
+      addLog(plan.slice(0, 500)); return plan;
+    },
+    kodlayici: async function (a, kw) {
+      addLog("KODLAYICI", "role");
+      var dosya = kw.dosya ? String(kw.dosya) : "index.html";
+      await coder(String(a[0]), rules, a[1] ? String(a[1]) : "", kw.geri ? String(kw.geri) : "", dosya);
+      if (!(dosya in files)) addLog("Uyarı: '" + dosya + "' dosyası yazılmadı.", "warn");
+      return files[dosya] || "";
+    },
+    test: async function (a) {
+      addLog("TEST EDEN", "role");
+      var r = await tester(String(a[0]), rules, String(a[1]));
+      var ok = r.karar === "onay";
+      addLog((ok ? "Onay: " : "Red: ") + (r.sebep || ""), ok ? "ok" : "warn");
+      return { onay: ok, sebep: r.sebep || "" };
+    },
+    kaydet: async function (a) {
+      files[String(a[1])] = String(a[0]); saveFiles();
+      addLog("Kaydedildi: " + a[1]); return a[0];
+    }
+  };
+  var vars = {};
+  try { await execBlock(P.stmts, vars, { sayac: 0, limit: 40, adim: 0, adimLimit: 300000, derinlik: 0, derinlikLimit: 600, defs: P.defs, fn: fn }); }
+  finally { lastIstek = String(vars.istek || ""); }
+  addLog("Program bitti. Dosyalar bölümünden bakabilirsin.", "ok");
+}
+
+var CODER_SYS = "Sen yazılım ekibinin kodlayıcısısın. Her adımda SADECE tek bir araç çağrısı yaz, başka hiçbir şey yazma.\n" +
+  "Dosya yazmak için JSON KULLANMA. Şu biçimi kullan (kod olduğu gibi yazılır, tırnak ya da satır sonu kaçırma yok):\n" +
+  "@@dosya_yaz ad.html\n...dosyanın tam içeriği...\n@@son\n" +
+  "Diğer araçlar JSON'dur:\n" +
+  '{"arac":"dosya_oku","yol":"ad.html"}\n' +
+  '{"arac":"dosyalari_listele"}\n' +
+  '{"arac":"bitti","mesaj":"ne yaptığının kısa özeti"}\n' +
+  "Dosyaları tam ve çalışır halde yaz. Bitince bitti aracını kullan.";
+
+function parseCoder(text) {
+  var m = text.match(/@@dosya_yaz[ \t]+(\S+)[ \t]*\r?\n([\s\S]*?)\r?\n?@@son/);
+  if (m) {
+    var c = m[2].replace(/^\s*```[a-zA-Z]*\r?\n/, "").replace(/\r?\n```\s*$/, "");
+    return { arac: "dosya_yaz", yol: m[1], icerik: c };
+  }
+  return parseAction(text);
+}
+function readFiles(names) {
+  return names.map(function (f) { return "=== " + f + " ===\n" + (files[f] || "(boş)"); }).join("\n\n");
+}
+function makeRules(P) {
+  return TEMEL + "\n" + P.kisitlar.map(function (k) { return "KISIT: " + KISIT[k]; }).join("\n");
+}
+
+async function planner(istek, rules, context) {
+  return askSafe("Sen yazılım ekibinin planlayıcısısın. Aşağıdaki istek için KISA bir plan yaz: " +
+    "oluşturulacak dosya adları ve numaralı 3-6 adım. Kod yazma, sadece plan. Türkçe yaz.\n\n" +
+    rules + "\n\nİSTEK: " + istek + (context ? "\n\nGİRDİ DOSYALARI:\n" + context : ""));
+}
+
+async function coder(istek, rules, context, feedback, hedef) {
+  var t = CODER_SYS + "\n" + rules + "\n\nİSTEK: " + istek;
+  if (context) t += "\n\nGİRDİ DOSYALARI:\n" + context;
+  if (hedef) t += "\n\nHEDEF: Sonuç '" + hedef + "' dosyasına yazılmalı.";
+  t += "\n\nMEVCUT DOSYALAR:\n" + dump() + "\n";
+  if (feedback) t += "\nGERİ BİLDİRİM (bunları düzelt): " + feedback + "\n";
+  for (var i = 1; i <= MAX_STEPS; i++) {
+    var a = parseCoder(await askSafe(t));
+    if (!a) { addLog("Araç çağrısı anlaşılmadı, tekrar isteniyor.", "warn"); t += "\nSİSTEM: Geçerli bir araç çağrısı yazmadın. Dosya için @@dosya_yaz ... @@son biçimini, diğerleri için JSON kullan.\n"; continue; }
+    if (a.arac === "bitti") { addLog("Bitti: " + (a.mesaj || "")); return; }
+    var res = runTool(a);
+    addLog(a.arac + (a.yol ? " (" + a.yol + ")" : "") + "\n→ " + res.slice(0, 120));
+    t += "\nSEN: " + JSON.stringify(a) + "\nSONUÇ: " + res + "\n";
+  }
+  addLog("Kodlayıcı adım sınırına ulaştı.", "warn");
+}
+
+async function tester(istek, rules, icerik) {
+  var out = await askSafe("Sen yazılım ekibinin test edenisin. Aşağıdaki dosyaları isteğe ve kurallara göre dikkatle incele: " +
+    "eksik, hata veya isteğe uymayan yer var mı? SADECE şu JSON'u yaz: " +
+    '{"karar":"onay" veya "red","sebep":"kısa Türkçe açıklama, red ise düzeltilecekler"}\n\n' + rules + "\n" +
+    "ÖNEMLİ: Sadece gerçek hata, eksik özellik ya da çalışmayacak kod varsa red de. Küçük kusurlar için red etme.\n\n" +
+    "İSTEK: " + istek + "\n\nDOSYALAR:\n" + icerik);
+  return parseAction(out) || { karar: "red", sebep: "Test eden geçerli cevap veremedi." };
+}
+
+/* ---------- Önizleme hataları ve düzeltme ---------- */
+var errs = [], lastIstek = "", lastRules = "", diag = "";
+var HOOK = "<script>(function(){function s(m){try{parent.postMessage({ekipHata:String(m)},'*')}catch(e){}}" +
+  "window.onerror=function(m,u,l){s(m+' (satır '+l+')')};" +
+  "window.addEventListener('unhandledrejection',function(e){s('Promise: '+(e.reason&&e.reason.message||e.reason))});" +
+  "var ce=console.error;console.error=function(){s([].join.call(arguments,' '));ce.apply(console,arguments)};" +
+  "window.addEventListener('error',function(e){var t=e.target;if(t&&t!==window&&(t.src||t.href))s('Yüklenemedi: '+(t.src||t.href))},true);" +
+  "window.addEventListener('error',function(e){var t=e.target;if(t&&t!==window&&t.tagName==='SCRIPT'&&!t.src&&!t.href)s('Yüklenemedi: satır içi modül (import edilen kütüphane gelmedi)')},true);" +
+  "window.addEventListener('load',function(){setTimeout(function(){if(/yükleniyor|loading/i.test(document.body.innerText))s('Sayfa 8 sn sonra hâlâ yükleniyor ekranında: oyun başlamadı.')},8000)});" +
+  "window.addEventListener('load',function(){setTimeout(function(){var c=document.querySelectorAll('canvas'),gl=false;try{var t=document.createElement('canvas');gl=!!(t.getContext('webgl2')||t.getContext('webgl'))}catch(e){}s('TEŞHİS: canvas='+c.length+', WebGL='+(gl?'var':'YOK')+', THREE='+(window.THREE?'var':'yok (modül olabilir)'))},2000)});" +
+  "})();<\/script>";
+window.addEventListener("message", function (e) {
+  if (!e.data || !e.data.ekipHata) return;
+  var m = String(e.data.ekipHata);
+  if (m.indexOf("TEŞHİS") === 0) { diag = m; }
+  else if (errs.indexOf(m) < 0 && errs.length < 5) errs.push(m);
+  $("errs").hidden = false;
+  $("errs").textContent = (errs.length ? "Önizleme hataları:\n" + errs.join("\n") + "\n\n" : "") + diag;
+  $("fixbtn").hidden = !errs.length;
+});
+$("fixbtn").onclick = async function () {
+  $("fixbtn").disabled = true;
+  addLog("— Hata düzeltme —", "role");
+  try {
+    await coder(lastIstek, lastRules, "", "Önizlemede şu çalışma zamanı hataları çıktı, düzelt: " + errs.join(" | "), "");
+    addLog("Düzeltme bitti. Dosyalardan tekrar Önizle'ye bas.", "ok");
+  } catch (e) { addLog("Durdu: " + e.message, "warn"); }
+  $("fixbtn").disabled = false;
+};
+
+/* ---------- Düğmeler ---------- */
+
+var ORNEKLER = {"takim": {"prog": "proje \"Sayaç\"\nortam tarayici\nkisit tek_dosya\nkisit modul_yok\n\n# Kendi fonksiyonumuz: kodu test ettirip sonucu döndürür\nfonksiyon dene(istek, kod):\n    sonuc = test(istek, kod)\n    dondur sonuc\n\nistek = \"Basit bir sayaç uygulaması yap: artı, eksi ve sıfırla düğmeleri olsun, telefonda güzel görünsün.\"\nplan = planlayici(istek)\nkaydet(plan, \"plan.txt\")\nkod = kodlayici(istek, plan, dosya=\"index.html\")\n\ntur = 1\ntekrar 3 kez:\n    yaz \"Tur \" + tur + \" başladı\"\n    sonuc = dene(istek, kod)\n    eger sonuc.onay:\n        yaz \"Onaylandı\"\n        dur\n    degilse:\n        kod = kodlayici(istek, plan, dosya=\"index.html\", geri=sonuc.sebep)\n    tur = tur + 1\n", "girdi": ""}, "hesap": {"prog": "proje \"Hesap\"\nortam tarayici\n\nfonksiyon faktoriyel(n):\n    eger n <= 1:\n        dondur 1\n    dondur n * faktoriyel(n - 1)\n\nyaz \"5! = \" + faktoriyel(5)\n", "girdi": ""}, "liste": {"prog": "proje \"Listeler\"\nortam tarayici\n\nyaz \"--- Liste ---\"\nsayilar = [3, 1, 4, 1, 5]\nekle(sayilar, 9)\ntoplam = 0\nher s icinde sayilar:\n    toplam = toplam + s\nyaz \"Toplam: \" + toplam + \", eleman sayısı: \" + uzunluk(sayilar)\n\nyaz \"--- Metin ---\"\ncumle = \"ekip dili çok güzel\"\nher kelime icinde bol(cumle, \" \"):\n    yaz buyuk(kelime) + \" (\" + uzunluk(kelime) + \" harf)\"\n\nyaz \"--- Sözlük ---\"\nkisi = {\"ad\": \"Ali\", \"yas\": 20}\nkisi[\"yas\"] = kisi[\"yas\"] + 1\nyaz kisi\n\nyaz \"--- Sayaç ---\"\ni = 1\niken i <= 3:\n    yaz \"i = \" + i\n    i = i + 1\n", "girdi": ""}, "sozcuk": {"prog": "proje \"Sözcükler\"\nortam tarayici\n\nfonksiyon ayir(kod):\n    sonuc = []\n    i = 0\n    iken i < uzunluk(kod):\n        c = kod[i]\n        eger bosluk_mi(c):\n            i = i + 1\n            devam\n        eger rakam_mi(c):\n            s = \"\"\n            iken i < uzunluk(kod) ve rakam_mi(kod[i]):\n                s = s + kod[i]\n                i = i + 1\n            ekle(sonuc, {\"tur\": \"sayi\", \"deger\": s})\n            devam\n        ekle(sonuc, {\"tur\": \"isaret\", \"deger\": c})\n        i = i + 1\n    dondur sonuc\n\nyaz ayir(\"12 + 3*45\")\n", "girdi": ""}, "yorum": {"prog": "proje \"Özyorumlayıcı\"\nortam tarayici\n\n# Bu program, kendi dilimizin küçük bir çekirdeğini\n# yine kendi dilimizle yorumlar. Çalıştırılacak program\n# aşağıdaki \"Girdi\" kutusundan girdi() ile okunur.\n# Bu yorumlayıcı ekip programlarını da çalıştırabilir:\n# proje/ortam/kisit satırları, tekrar, listeler, .ozellik\n# ve ajan fonksiyonları (planlayici, kodlayici, test, kaydet).\n# Not: isimlerde büyük/küçük harf farkı yoktur, o yüzden\n# her değişkene ayrı bir ad verildi.\n\n# ---------- 1. SÖZCÜKLERE AYIRMA ----------\n\nfonksiyon sozcukle(sat):\n    sonuc = []\n    i = 0\n    n = uzunluk(sat)\n    iken i < n:\n        c = sat[i]\n        eger c == \" \":\n            i = i + 1\n            devam\n        eger c == \"#\":\n            dur\n        eger c == \"\\\"\":\n            hm = \"\"\n            i = i + 1\n            kapandi = yanlis\n            iken i < n:\n                d = sat[i]\n                eger d == \"\\\\\":\n                    eger i + 1 >= n:\n                        hata(\"Satırın sonunda yalnız \\\\ var\")\n                    sonraki = sat[i + 1]\n                    eger sonraki == \"n\":\n                        hm = hm + \"\\n\"\n                    degilse:\n                        eger sonraki == \"t\":\n                            hm = hm + \"\\t\"\n                        degilse:\n                            hm = hm + sonraki\n                    i = i + 2\n                    devam\n                eger d == \"\\\"\":\n                    kapandi = dogru\n                    dur\n                hm = hm + d\n                i = i + 1\n            eger degil kapandi:\n                hata(\"Tırnak kapatılmamış\")\n            ekle(sonuc, {\"t\": \"metin\", \"v\": hm})\n            i = i + 1\n            devam\n        eger rakam_mi(c):\n            hm = \"\"\n            iken i < n ve rakam_mi(sat[i]):\n                hm = hm + sat[i]\n                i = i + 1\n            eger i + 1 < n ve sat[i] == \".\" ve rakam_mi(sat[i + 1]):\n                hm = hm + \".\"\n                i = i + 1\n                iken i < n ve rakam_mi(sat[i]):\n                    hm = hm + sat[i]\n                    i = i + 1\n            ekle(sonuc, {\"t\": \"sayi\", \"v\": sayi(hm)})\n            devam\n        eger harf_mi(c):\n            hm = \"\"\n            iken i < n ve (harf_mi(sat[i]) veya rakam_mi(sat[i])):\n                hm = hm + sat[i]\n                i = i + 1\n            ekle(sonuc, {\"t\": \"ad\", \"v\": hm})\n            devam\n        iki = parca(sat, i, i + 2)\n        eger iki == \"==\" veya iki == \"!=\" veya iki == \"<=\" veya iki == \">=\":\n            ekle(sonuc, {\"t\": \"isaret\", \"v\": iki})\n            i = i + 2\n            devam\n        eger bul(\"().,=:+-*/%<>[]\", c) >= 0:\n            ekle(sonuc, {\"t\": \"isaret\", \"v\": c})\n            i = i + 1\n            devam\n        hata(\"Anlaşılmayan karakter: \" + c)\n    dondur sonuc\n\nfonksiyon satirlara_bol(kod):\n    ham = bol(kod, \"\\n\")\n    sonuc = []\n    no = 0\n    iken no < uzunluk(ham):\n        sat = ham[no]\n        no = no + 1\n        g = 0\n        iken g < uzunluk(sat) ve sat[g] == \" \":\n            g = g + 1\n        govde = parca(sat, g, uzunluk(sat))\n        eger uzunluk(govde) == 0:\n            devam\n        eger govde[0] == \"#\":\n            devam\n        ekle(sonuc, {\"no\": no, \"g\": g, \"tok\": sozcukle(govde)})\n    dondur sonuc\n\n# ---------- 2. AYRIŞTIRMA (İFADELER) ----------\n\nfonksiyon bak(st):\n    eger st[\"i\"] < uzunluk(st[\"tok\"]):\n        dondur st[\"tok\"][st[\"i\"]]\n    dondur bos\n\nfonksiyon ilerle(st):\n    st[\"i\"] = st[\"i\"] + 1\n\nfonksiyon isaret_mi(st, deger):\n    t = bak(st)\n    dondur t != bos ve t[\"t\"] == \"isaret\" ve t[\"v\"] == deger\n\nfonksiyon kelime_mi(st, deger):\n    t = bak(st)\n    dondur t != bos ve t[\"t\"] == \"ad\" ve t[\"v\"] == deger\n\nfonksiyon isaret_sec(st, liste):\n    t = bak(st)\n    eger t == bos:\n        dondur \"\"\n    eger t[\"t\"] != \"isaret\":\n        dondur \"\"\n    eger var_mi(liste, t[\"v\"]):\n        dondur t[\"v\"]\n    dondur \"\"\n\nfonksiyon bekle_isaret(st, deger):\n    eger degil isaret_mi(st, deger):\n        hata(\"Satır \" + st[\"no\"] + \": '\" + deger + \"' bekleniyordu\")\n    ilerle(st)\n\nfonksiyon satir_sonu(st):\n    eger bak(st) != bos:\n        hata(\"Satır \" + st[\"no\"] + \": satırın sonunda fazlalık var\")\n\nfonksiyon ifade(st):\n    dondur veya_ifade(st)\n\nfonksiyon veya_ifade(st):\n    sol = ve_ifade(st)\n    iken kelime_mi(st, \"veya\"):\n        ilerle(st)\n        sag = ve_ifade(st)\n        sol = {\"k\": \"mantik\", \"op\": \"veya\", \"l\": sol, \"r\": sag}\n    dondur sol\n\nfonksiyon ve_ifade(st):\n    sol = degil_ifade(st)\n    iken kelime_mi(st, \"ve\"):\n        ilerle(st)\n        sag = degil_ifade(st)\n        sol = {\"k\": \"mantik\", \"op\": \"ve\", \"l\": sol, \"r\": sag}\n    dondur sol\n\nfonksiyon degil_ifade(st):\n    eger kelime_mi(st, \"degil\"):\n        ilerle(st)\n        dondur {\"k\": \"degil\", \"e\": degil_ifade(st)}\n    dondur karsilastir(st)\n\nfonksiyon karsilastir(st):\n    sol = topla(st)\n    op = isaret_sec(st, [\"==\", \"!=\", \"<\", \">\", \"<=\", \">=\"])\n    eger op != \"\":\n        ilerle(st)\n        sag = topla(st)\n        dondur {\"k\": \"ikili\", \"op\": op, \"l\": sol, \"r\": sag}\n    dondur sol\n\nfonksiyon topla(st):\n    sol = carp(st)\n    op = isaret_sec(st, [\"+\", \"-\"])\n    iken op != \"\":\n        ilerle(st)\n        sag = carp(st)\n        sol = {\"k\": \"ikili\", \"op\": op, \"l\": sol, \"r\": sag}\n        op = isaret_sec(st, [\"+\", \"-\"])\n    dondur sol\n\nfonksiyon carp(st):\n    sol = birli(st)\n    op = isaret_sec(st, [\"*\", \"/\", \"%\"])\n    iken op != \"\":\n        ilerle(st)\n        sag = birli(st)\n        sol = {\"k\": \"ikili\", \"op\": op, \"l\": sol, \"r\": sag}\n        op = isaret_sec(st, [\"*\", \"/\", \"%\"])\n    dondur sol\n\nfonksiyon birli(st):\n    eger isaret_mi(st, \"-\"):\n        ilerle(st)\n        dondur {\"k\": \"eksi\", \"e\": birli(st)}\n    dondur temel(st)\n\nfonksiyon kw_mi(st):\n    t = bak(st)\n    eger t == bos veya t[\"t\"] != \"ad\":\n        dondur yanlis\n    eger st[\"i\"] + 1 >= uzunluk(st[\"tok\"]):\n        dondur yanlis\n    sn = st[\"tok\"][st[\"i\"] + 1]\n    dondur sn[\"t\"] == \"isaret\" ve sn[\"v\"] == \"=\"\n\nfonksiyon birincil(st):\n    t = bak(st)\n    eger t == bos:\n        hata(\"Satır \" + st[\"no\"] + \": ifade yarım kaldı\")\n    ilerle(st)\n    eger t[\"t\"] == \"sayi\" veya t[\"t\"] == \"metin\":\n        dondur {\"k\": \"sabit\", \"v\": t[\"v\"]}\n    eger t[\"t\"] == \"ad\":\n        eger t[\"v\"] == \"dogru\":\n            dondur {\"k\": \"sabit\", \"v\": dogru}\n        eger t[\"v\"] == \"yanlis\":\n            dondur {\"k\": \"sabit\", \"v\": yanlis}\n        eger t[\"v\"] == \"bos\":\n            dondur {\"k\": \"sabit\", \"v\": bos}\n        eger isaret_mi(st, \"(\"):\n            ilerle(st)\n            argler = []\n            kwler = {}\n            iken degil isaret_mi(st, \")\"):\n                eger kw_mi(st):\n                    kadi = bak(st)[\"v\"]\n                    ilerle(st)\n                    ilerle(st)\n                    kwler[kadi] = ifade(st)\n                degilse:\n                    ekle(argler, ifade(st))\n                eger isaret_mi(st, \",\"):\n                    ilerle(st)\n                degilse:\n                    eger degil isaret_mi(st, \")\"):\n                        hata(\"Satır \" + st[\"no\"] + \": ',' ya da ')' bekleniyordu\")\n            ilerle(st)\n            dondur {\"k\": \"cagri\", \"ad\": t[\"v\"], \"args\": argler, \"kw\": kwler}\n        dondur {\"k\": \"ad\", \"ad\": t[\"v\"]}\n    eger t[\"t\"] == \"isaret\" ve t[\"v\"] == \"(\":\n        ic = ifade(st)\n        bekle_isaret(st, \")\")\n        dondur ic\n    eger t[\"t\"] == \"isaret\" ve t[\"v\"] == \"[\":\n        ogeler = []\n        iken degil isaret_mi(st, \"]\"):\n            ekle(ogeler, ifade(st))\n            eger isaret_mi(st, \",\"):\n                ilerle(st)\n            degilse:\n                eger degil isaret_mi(st, \"]\"):\n                    hata(\"Satır \" + st[\"no\"] + \": ',' ya da ']' bekleniyordu\")\n        ilerle(st)\n        dondur {\"k\": \"liste\", \"ogeler\": ogeler}\n    hata(\"Satır \" + st[\"no\"] + \": beklenmeyen '\" + metin(t[\"v\"]) + \"'\")\n\nfonksiyon sonek(st, taban):\n    e = taban\n    iken isaret_mi(st, \".\") veya isaret_mi(st, \"[\"):\n        eger isaret_mi(st, \".\"):\n            ilerle(st)\n            nt = bak(st)\n            eger nt == bos veya nt[\"t\"] != \"ad\":\n                hata(\"Satır \" + st[\"no\"] + \": '.' işaretinden sonra bir ad gelmeli\")\n            ilerle(st)\n            e = {\"k\": \"ozellik\", \"nesne\": e, \"ad\": nt[\"v\"]}\n        degilse:\n            ilerle(st)\n            ix = ifade(st)\n            bekle_isaret(st, \"]\")\n            e = {\"k\": \"indeks\", \"nesne\": e, \"idx\": ix}\n    dondur e\n\nfonksiyon temel(st):\n    dondur sonek(st, birincil(st))\n\n# ---------- 3. AYRIŞTIRMA (SATIRLAR VE BLOKLAR) ----------\n\nfonksiyon alt_blok(satirlar, ptr, seviye, no):\n    eger ptr[\"i\"] >= uzunluk(satirlar):\n        hata(\"Satır \" + no + \": ':' işaretinden sonra girintili blok gerekli\")\n    yeni = satirlar[ptr[\"i\"]][\"g\"]\n    eger yeni <= seviye:\n        hata(\"Satır \" + no + \": ':' işaretinden sonra girintili blok gerekli\")\n    dondur blok_oku(satirlar, ptr, yeni)\n\nfonksiyon blok_oku(satirlar, ptr, seviye):\n    govde = []\n    iken ptr[\"i\"] < uzunluk(satirlar):\n        sat = satirlar[ptr[\"i\"]]\n        eger sat[\"g\"] < seviye:\n            dur\n        eger sat[\"g\"] > seviye:\n            hata(\"Satır \" + sat[\"no\"] + \": beklenmeyen girinti\")\n        ekle(govde, satir_oku(satirlar, ptr, seviye))\n    dondur govde\n\nfonksiyon satir_oku(satirlar, ptr, seviye):\n    sat = satirlar[ptr[\"i\"]]\n    ptr[\"i\"] = ptr[\"i\"] + 1\n    st = {\"tok\": sat[\"tok\"], \"i\": 0, \"no\": sat[\"no\"]}\n    t = bak(st)\n    eger t[\"t\"] == \"ad\":\n        k = t[\"v\"]\n        eger k == \"proje\" veya k == \"ortam\":\n            st[\"i\"] = uzunluk(st[\"tok\"])\n            dondur {\"k\": \"bildirim\"}\n        eger k == \"kisit\":\n            ilerle(st)\n            kt = bak(st)\n            eger kt == bos veya kt[\"t\"] != \"ad\":\n                hata(\"Satır \" + sat[\"no\"] + \": kisit'ten sonra bir ad gelmeli\")\n            ilerle(st)\n            satir_sonu(st)\n            dondur {\"k\": \"kisit\", \"ad\": kt[\"v\"]}\n        eger k == \"tekrar\":\n            ilerle(st)\n            sayt = bak(st)\n            eger sayt == bos veya sayt[\"t\"] != \"sayi\":\n                hata(\"Satır \" + sat[\"no\"] + \": tekrar sayısı bir sayı olmalı\")\n            ilerle(st)\n            eger degil kelime_mi(st, \"kez\"):\n                hata(\"Satır \" + sat[\"no\"] + \": 'kez' bekleniyordu\")\n            ilerle(st)\n            bekle_isaret(st, \":\")\n            satir_sonu(st)\n            dondur {\"k\": \"tekrar\", \"n\": sayt[\"v\"], \"govde\": alt_blok(satirlar, ptr, seviye, sat[\"no\"])}\n        eger k == \"yaz\":\n            ilerle(st)\n            e = ifade(st)\n            satir_sonu(st)\n            dondur {\"k\": \"yaz\", \"e\": e}\n        eger k == \"dur\" veya k == \"devam\":\n            ilerle(st)\n            satir_sonu(st)\n            dondur {\"k\": k}\n        eger k == \"dondur\":\n            ilerle(st)\n            eger bak(st) == bos:\n                dondur {\"k\": \"dondur\", \"e\": {\"k\": \"sabit\", \"v\": \"\"}}\n            e = ifade(st)\n            satir_sonu(st)\n            dondur {\"k\": \"dondur\", \"e\": e}\n        eger k == \"eger\":\n            ilerle(st)\n            c = ifade(st)\n            bekle_isaret(st, \":\")\n            satir_sonu(st)\n            govde = alt_blok(satirlar, ptr, seviye, sat[\"no\"])\n            degilse_govde = []\n            eger ptr[\"i\"] < uzunluk(satirlar):\n                sonraki = satirlar[ptr[\"i\"]]\n                eger sonraki[\"g\"] == seviye ve uzunluk(sonraki[\"tok\"]) == 2 ve sonraki[\"tok\"][0][\"v\"] == \"degilse\" ve sonraki[\"tok\"][1][\"v\"] == \":\":\n                    ptr[\"i\"] = ptr[\"i\"] + 1\n                    degilse_govde = alt_blok(satirlar, ptr, seviye, sonraki[\"no\"])\n            dondur {\"k\": \"eger\", \"c\": c, \"govde\": govde, \"degilse\": degilse_govde}\n        eger k == \"iken\":\n            ilerle(st)\n            c = ifade(st)\n            bekle_isaret(st, \":\")\n            satir_sonu(st)\n            dondur {\"k\": \"iken\", \"c\": c, \"govde\": alt_blok(satirlar, ptr, seviye, sat[\"no\"])}\n        eger k == \"fonksiyon\":\n            eger seviye != 0:\n                hata(\"Satır \" + sat[\"no\"] + \": fonksiyon sadece en üstte tanımlanabilir\")\n            ilerle(st)\n            adt = bak(st)\n            eger adt == bos veya adt[\"t\"] != \"ad\":\n                hata(\"Satır \" + sat[\"no\"] + \": fonksiyon adı bekleniyordu\")\n            ilerle(st)\n            bekle_isaret(st, \"(\")\n            par = []\n            iken degil isaret_mi(st, \")\"):\n                pt = bak(st)\n                eger pt == bos veya pt[\"t\"] != \"ad\":\n                    hata(\"Satır \" + sat[\"no\"] + \": parametre adı bekleniyordu\")\n                ekle(par, pt[\"v\"])\n                ilerle(st)\n                eger isaret_mi(st, \",\"):\n                    ilerle(st)\n            ilerle(st)\n            bekle_isaret(st, \":\")\n            satir_sonu(st)\n            dondur {\"k\": \"fon\", \"ad\": adt[\"v\"], \"par\": par, \"govde\": alt_blok(satirlar, ptr, seviye, sat[\"no\"])}\n        # atama: ad = ifade\n        sonraki_t = bos\n        eger st[\"i\"] + 1 < uzunluk(st[\"tok\"]):\n            sonraki_t = st[\"tok\"][st[\"i\"] + 1]\n        eger sonraki_t != bos ve sonraki_t[\"t\"] == \"isaret\" ve sonraki_t[\"v\"] == \"=\":\n            ilerle(st)\n            ilerle(st)\n            e = ifade(st)\n            satir_sonu(st)\n            dondur {\"k\": \"ata\", \"ad\": k, \"e\": e}\n    e = ifade(st)\n    satir_sonu(st)\n    dondur {\"k\": \"ifade\", \"e\": e}\n\nfonksiyon program_oku(kod):\n    satirlar = satirlara_bol(kod)\n    ptr = {\"i\": 0}\n    dugumler = blok_oku(satirlar, ptr, 0)\n    fonlar = {}\n    komutlar = []\n    her d icinde dugumler:\n        eger d[\"k\"] == \"fon\":\n            fonlar[d[\"ad\"]] = d\n        degilse:\n            ekle(komutlar, d)\n    dondur {\"komutlar\": komutlar, \"fonlar\": fonlar}\n\n# ---------- 4. ÇALIŞTIRMA ----------\n\nfonksiyon islem(op, a, b):\n    eger op == \"+\":\n        dondur a + b\n    eger op == \"-\":\n        dondur a - b\n    eger op == \"*\":\n        dondur a * b\n    eger op == \"/\":\n        dondur a / b\n    eger op == \"%\":\n        dondur a % b\n    eger op == \"==\":\n        dondur a == b\n    eger op == \"!=\":\n        dondur a != b\n    eger op == \"<\":\n        dondur a < b\n    eger op == \">\":\n        dondur a > b\n    eger op == \"<=\":\n        dondur a <= b\n    eger op == \">=\":\n        dondur a >= b\n    hata(\"Bilinmeyen işlem: \" + op)\n\nfonksiyon yerlesik_cagri(ad, argler, kwler):\n    eger ad == \"uzunluk\":\n        dondur uzunluk(argler[0])\n    eger ad == \"sayi\":\n        dondur sayi(argler[0])\n    eger ad == \"metin\":\n        dondur metin(argler[0])\n    eger ad == \"buyuk\":\n        dondur buyuk(argler[0])\n    eger ad == \"kucuk\":\n        dondur kucuk(argler[0])\n    eger ad == \"parca\":\n        dondur parca(argler[0], argler[1], argler[2])\n    eger ad == \"bul\":\n        dondur bul(argler[0], argler[1])\n    eger ad == \"planlayici\":\n        dondur planlayici(argler[0])\n    eger ad == \"kodlayici\":\n        plan = \"\"\n        eger uzunluk(argler) >= 2:\n            plan = argler[1]\n        dosya = \"index.html\"\n        eger var_mi(kwler, \"dosya\"):\n            dosya = kwler[\"dosya\"]\n        geri = \"\"\n        eger var_mi(kwler, \"geri\"):\n            geri = kwler[\"geri\"]\n        dondur kodlayici(argler[0], plan, dosya=dosya, geri=geri)\n    eger ad == \"test\":\n        dondur test(argler[0], argler[1])\n    eger ad == \"kaydet\":\n        dondur kaydet(argler[0], argler[1])\n    hata(\"İç program: bilinmeyen fonksiyon '\" + ad + \"'\")\n\nfonksiyon kullanici_cagri(fon, argler, gen):\n    eger uzunluk(argler) != uzunluk(fon[\"par\"]):\n        hata(\"İç program: \" + fon[\"ad\"] + \" \" + uzunluk(fon[\"par\"]) + \" parametre bekliyor\")\n    ort = {}\n    i = 0\n    iken i < uzunluk(argler):\n        ort[fon[\"par\"][i]] = argler[i]\n        i = i + 1\n    r = blok_calistir(fon[\"govde\"], ort, gen)\n    eger r[\"s\"] == \"dondur\":\n        dondur r[\"v\"]\n    dondur \"\"\n\nfonksiyon degerle(e, ort, gen):\n    k = e[\"k\"]\n    eger k == \"sabit\":\n        dondur e[\"v\"]\n    eger k == \"ad\":\n        eger var_mi(ort, e[\"ad\"]):\n            dondur ort[e[\"ad\"]]\n        hata(\"İç program: '\" + e[\"ad\"] + \"' değişkeni tanımlı değil\")\n    eger k == \"eksi\":\n        dondur 0 - degerle(e[\"e\"], ort, gen)\n    eger k == \"degil\":\n        dondur degil degerle(e[\"e\"], ort, gen)\n    eger k == \"mantik\":\n        sol = degerle(e[\"l\"], ort, gen)\n        eger e[\"op\"] == \"veya\":\n            eger sol:\n                dondur sol\n            dondur degerle(e[\"r\"], ort, gen)\n        eger sol:\n            dondur degerle(e[\"r\"], ort, gen)\n        dondur sol\n    eger k == \"ikili\":\n        sol = degerle(e[\"l\"], ort, gen)\n        sag = degerle(e[\"r\"], ort, gen)\n        dondur islem(e[\"op\"], sol, sag)\n    eger k == \"cagri\":\n        argler = []\n        her a icinde e[\"args\"]:\n            ekle(argler, degerle(a, ort, gen))\n        eger var_mi(gen[\"fonlar\"], e[\"ad\"]):\n            dondur kullanici_cagri(gen[\"fonlar\"][e[\"ad\"]], argler, gen)\n        kwdeger = {}\n        her kn icinde anahtarlar(e[\"kw\"]):\n            kwdeger[kn] = degerle(e[\"kw\"][kn], ort, gen)\n        dondur yerlesik_cagri(e[\"ad\"], argler, kwdeger)\n    eger k == \"liste\":\n        sonucl = []\n        her og icinde e[\"ogeler\"]:\n            ekle(sonucl, degerle(og, ort, gen))\n        dondur sonucl\n    eger k == \"ozellik\":\n        nesne = degerle(e[\"nesne\"], ort, gen)\n        eger tip(nesne) != \"sozluk\":\n            hata(\"İç program: '\" + e[\"ad\"] + \"' özelliği için sözlük gerekir\")\n        eger var_mi(nesne, e[\"ad\"]):\n            dondur nesne[e[\"ad\"]]\n        hata(\"İç program: '\" + e[\"ad\"] + \"' anahtarı yok\")\n    eger k == \"indeks\":\n        nesne = degerle(e[\"nesne\"], ort, gen)\n        sira = degerle(e[\"idx\"], ort, gen)\n        dondur nesne[sira]\n    hata(\"İç program: bilinmeyen ifade türü \" + k)\n\nfonksiyon bos_sonuc():\n    dondur {\"s\": \"\", \"v\": \"\"}\n\nfonksiyon satir_calistir(dg, ort, gen):\n    k = dg[\"k\"]\n    eger k == \"yaz\":\n        yaz degerle(dg[\"e\"], ort, gen)\n        dondur bos_sonuc()\n    eger k == \"ata\":\n        ort[dg[\"ad\"]] = degerle(dg[\"e\"], ort, gen)\n        dondur bos_sonuc()\n    eger k == \"ifade\":\n        degerle(dg[\"e\"], ort, gen)\n        dondur bos_sonuc()\n    eger k == \"eger\":\n        eger degerle(dg[\"c\"], ort, gen):\n            dondur blok_calistir(dg[\"govde\"], ort, gen)\n        dondur blok_calistir(dg[\"degilse\"], ort, gen)\n    eger k == \"iken\":\n        iken degerle(dg[\"c\"], ort, gen):\n            r = blok_calistir(dg[\"govde\"], ort, gen)\n            eger r[\"s\"] == \"dur\":\n                dur\n            eger r[\"s\"] == \"dondur\":\n                dondur r\n        dondur bos_sonuc()\n    eger k == \"bildirim\":\n        dondur bos_sonuc()\n    eger k == \"kisit\":\n        kisit_ekle(dg[\"ad\"])\n        dondur bos_sonuc()\n    eger k == \"tekrar\":\n        tur = 0\n        iken tur < dg[\"n\"]:\n            tur = tur + 1\n            r = blok_calistir(dg[\"govde\"], ort, gen)\n            eger r[\"s\"] == \"dur\":\n                dur\n            eger r[\"s\"] == \"dondur\":\n                dondur r\n        dondur bos_sonuc()\n    eger k == \"dur\":\n        dondur {\"s\": \"dur\", \"v\": \"\"}\n    eger k == \"devam\":\n        dondur {\"s\": \"devam\", \"v\": \"\"}\n    eger k == \"dondur\":\n        dondur {\"s\": \"dondur\", \"v\": degerle(dg[\"e\"], ort, gen)}\n    hata(\"İç program: bilinmeyen komut türü \" + k)\n\nfonksiyon blok_calistir(govde, ort, gen):\n    i = 0\n    iken i < uzunluk(govde):\n        r = satir_calistir(govde[i], ort, gen)\n        eger r[\"s\"] != \"\":\n            dondur r\n        i = i + 1\n    dondur bos_sonuc()\n\nfonksiyon calistir_program(kod):\n    prog = program_oku(kod)\n    gen = {\"fonlar\": prog[\"fonlar\"]}\n    ort = {}\n    blok_calistir(prog[\"komutlar\"], ort, gen)\n\n# ---------- ÇALIŞTIR ----------\ncalistir_program(girdi())\n", "girdi": "# Bu program yukarıdaki yorumlayıcı tarafından çalıştırılır\nfonksiyon faktoriyel(n):\n    eger n <= 1:\n        dondur 1\n    dondur n * faktoriyel(n - 1)\n\nyaz \"5! = \" + faktoriyel(5)\n\ni = 1\ntoplam = 0\niken i <= 10:\n    toplam = toplam + i\n    i = i + 1\nyaz \"1..10 toplamı: \" + toplam\n"}, "yorumtakim": {"prog": "proje \"Özyorumlayıcı\"\nortam tarayici\n\n# Bu program, kendi dilimizin küçük bir çekirdeğini\n# yine kendi dilimizle yorumlar. Çalıştırılacak program\n# aşağıdaki \"Girdi\" kutusundan girdi() ile okunur.\n# Bu yorumlayıcı ekip programlarını da çalıştırabilir:\n# proje/ortam/kisit satırları, tekrar, listeler, .ozellik\n# ve ajan fonksiyonları (planlayici, kodlayici, test, kaydet).\n# Not: isimlerde büyük/küçük harf farkı yoktur, o yüzden\n# her değişkene ayrı bir ad verildi.\n\n# ---------- 1. SÖZCÜKLERE AYIRMA ----------\n\nfonksiyon sozcukle(sat):\n    sonuc = []\n    i = 0\n    n = uzunluk(sat)\n    iken i < n:\n        c = sat[i]\n        eger c == \" \":\n            i = i + 1\n            devam\n        eger c == \"#\":\n            dur\n        eger c == \"\\\"\":\n            hm = \"\"\n            i = i + 1\n            kapandi = yanlis\n            iken i < n:\n                d = sat[i]\n                eger d == \"\\\\\":\n                    eger i + 1 >= n:\n                        hata(\"Satırın sonunda yalnız \\\\ var\")\n                    sonraki = sat[i + 1]\n                    eger sonraki == \"n\":\n                        hm = hm + \"\\n\"\n                    degilse:\n                        eger sonraki == \"t\":\n                            hm = hm + \"\\t\"\n                        degilse:\n                            hm = hm + sonraki\n                    i = i + 2\n                    devam\n                eger d == \"\\\"\":\n                    kapandi = dogru\n                    dur\n                hm = hm + d\n                i = i + 1\n            eger degil kapandi:\n                hata(\"Tırnak kapatılmamış\")\n            ekle(sonuc, {\"t\": \"metin\", \"v\": hm})\n            i = i + 1\n            devam\n        eger rakam_mi(c):\n            hm = \"\"\n            iken i < n ve rakam_mi(sat[i]):\n                hm = hm + sat[i]\n                i = i + 1\n            eger i + 1 < n ve sat[i] == \".\" ve rakam_mi(sat[i + 1]):\n                hm = hm + \".\"\n                i = i + 1\n                iken i < n ve rakam_mi(sat[i]):\n                    hm = hm + sat[i]\n                    i = i + 1\n            ekle(sonuc, {\"t\": \"sayi\", \"v\": sayi(hm)})\n            devam\n        eger harf_mi(c):\n            hm = \"\"\n            iken i < n ve (harf_mi(sat[i]) veya rakam_mi(sat[i])):\n                hm = hm + sat[i]\n                i = i + 1\n            ekle(sonuc, {\"t\": \"ad\", \"v\": hm})\n            devam\n        iki = parca(sat, i, i + 2)\n        eger iki == \"==\" veya iki == \"!=\" veya iki == \"<=\" veya iki == \">=\":\n            ekle(sonuc, {\"t\": \"isaret\", \"v\": iki})\n            i = i + 2\n            devam\n        eger bul(\"().,=:+-*/%<>[]\", c) >= 0:\n            ekle(sonuc, {\"t\": \"isaret\", \"v\": c})\n            i = i + 1\n            devam\n        hata(\"Anlaşılmayan karakter: \" + c)\n    dondur sonuc\n\nfonksiyon satirlara_bol(kod):\n    ham = bol(kod, \"\\n\")\n    sonuc = []\n    no = 0\n    iken no < uzunluk(ham):\n        sat = ham[no]\n        no = no + 1\n        g = 0\n        iken g < uzunluk(sat) ve sat[g] == \" \":\n            g = g + 1\n        govde = parca(sat, g, uzunluk(sat))\n        eger uzunluk(govde) == 0:\n            devam\n        eger govde[0] == \"#\":\n            devam\n        ekle(sonuc, {\"no\": no, \"g\": g, \"tok\": sozcukle(govde)})\n    dondur sonuc\n\n# ---------- 2. AYRIŞTIRMA (İFADELER) ----------\n\nfonksiyon bak(st):\n    eger st[\"i\"] < uzunluk(st[\"tok\"]):\n        dondur st[\"tok\"][st[\"i\"]]\n    dondur bos\n\nfonksiyon ilerle(st):\n    st[\"i\"] = st[\"i\"] + 1\n\nfonksiyon isaret_mi(st, deger):\n    t = bak(st)\n    dondur t != bos ve t[\"t\"] == \"isaret\" ve t[\"v\"] == deger\n\nfonksiyon kelime_mi(st, deger):\n    t = bak(st)\n    dondur t != bos ve t[\"t\"] == \"ad\" ve t[\"v\"] == deger\n\nfonksiyon isaret_sec(st, liste):\n    t = bak(st)\n    eger t == bos:\n        dondur \"\"\n    eger t[\"t\"] != \"isaret\":\n        dondur \"\"\n    eger var_mi(liste, t[\"v\"]):\n        dondur t[\"v\"]\n    dondur \"\"\n\nfonksiyon bekle_isaret(st, deger):\n    eger degil isaret_mi(st, deger):\n        hata(\"Satır \" + st[\"no\"] + \": '\" + deger + \"' bekleniyordu\")\n    ilerle(st)\n\nfonksiyon satir_sonu(st):\n    eger bak(st) != bos:\n        hata(\"Satır \" + st[\"no\"] + \": satırın sonunda fazlalık var\")\n\nfonksiyon ifade(st):\n    dondur veya_ifade(st)\n\nfonksiyon veya_ifade(st):\n    sol = ve_ifade(st)\n    iken kelime_mi(st, \"veya\"):\n        ilerle(st)\n        sag = ve_ifade(st)\n        sol = {\"k\": \"mantik\", \"op\": \"veya\", \"l\": sol, \"r\": sag}\n    dondur sol\n\nfonksiyon ve_ifade(st):\n    sol = degil_ifade(st)\n    iken kelime_mi(st, \"ve\"):\n        ilerle(st)\n        sag = degil_ifade(st)\n        sol = {\"k\": \"mantik\", \"op\": \"ve\", \"l\": sol, \"r\": sag}\n    dondur sol\n\nfonksiyon degil_ifade(st):\n    eger kelime_mi(st, \"degil\"):\n        ilerle(st)\n        dondur {\"k\": \"degil\", \"e\": degil_ifade(st)}\n    dondur karsilastir(st)\n\nfonksiyon karsilastir(st):\n    sol = topla(st)\n    op = isaret_sec(st, [\"==\", \"!=\", \"<\", \">\", \"<=\", \">=\"])\n    eger op != \"\":\n        ilerle(st)\n        sag = topla(st)\n        dondur {\"k\": \"ikili\", \"op\": op, \"l\": sol, \"r\": sag}\n    dondur sol\n\nfonksiyon topla(st):\n    sol = carp(st)\n    op = isaret_sec(st, [\"+\", \"-\"])\n    iken op != \"\":\n        ilerle(st)\n        sag = carp(st)\n        sol = {\"k\": \"ikili\", \"op\": op, \"l\": sol, \"r\": sag}\n        op = isaret_sec(st, [\"+\", \"-\"])\n    dondur sol\n\nfonksiyon carp(st):\n    sol = birli(st)\n    op = isaret_sec(st, [\"*\", \"/\", \"%\"])\n    iken op != \"\":\n        ilerle(st)\n        sag = birli(st)\n        sol = {\"k\": \"ikili\", \"op\": op, \"l\": sol, \"r\": sag}\n        op = isaret_sec(st, [\"*\", \"/\", \"%\"])\n    dondur sol\n\nfonksiyon birli(st):\n    eger isaret_mi(st, \"-\"):\n        ilerle(st)\n        dondur {\"k\": \"eksi\", \"e\": birli(st)}\n    dondur temel(st)\n\nfonksiyon kw_mi(st):\n    t = bak(st)\n    eger t == bos veya t[\"t\"] != \"ad\":\n        dondur yanlis\n    eger st[\"i\"] + 1 >= uzunluk(st[\"tok\"]):\n        dondur yanlis\n    sn = st[\"tok\"][st[\"i\"] + 1]\n    dondur sn[\"t\"] == \"isaret\" ve sn[\"v\"] == \"=\"\n\nfonksiyon birincil(st):\n    t = bak(st)\n    eger t == bos:\n        hata(\"Satır \" + st[\"no\"] + \": ifade yarım kaldı\")\n    ilerle(st)\n    eger t[\"t\"] == \"sayi\" veya t[\"t\"] == \"metin\":\n        dondur {\"k\": \"sabit\", \"v\": t[\"v\"]}\n    eger t[\"t\"] == \"ad\":\n        eger t[\"v\"] == \"dogru\":\n            dondur {\"k\": \"sabit\", \"v\": dogru}\n        eger t[\"v\"] == \"yanlis\":\n            dondur {\"k\": \"sabit\", \"v\": yanlis}\n        eger t[\"v\"] == \"bos\":\n            dondur {\"k\": \"sabit\", \"v\": bos}\n        eger isaret_mi(st, \"(\"):\n            ilerle(st)\n            argler = []\n            kwler = {}\n            iken degil isaret_mi(st, \")\"):\n                eger kw_mi(st):\n                    kadi = bak(st)[\"v\"]\n                    ilerle(st)\n                    ilerle(st)\n                    kwler[kadi] = ifade(st)\n                degilse:\n                    ekle(argler, ifade(st))\n                eger isaret_mi(st, \",\"):\n                    ilerle(st)\n                degilse:\n                    eger degil isaret_mi(st, \")\"):\n                        hata(\"Satır \" + st[\"no\"] + \": ',' ya da ')' bekleniyordu\")\n            ilerle(st)\n            dondur {\"k\": \"cagri\", \"ad\": t[\"v\"], \"args\": argler, \"kw\": kwler}\n        dondur {\"k\": \"ad\", \"ad\": t[\"v\"]}\n    eger t[\"t\"] == \"isaret\" ve t[\"v\"] == \"(\":\n        ic = ifade(st)\n        bekle_isaret(st, \")\")\n        dondur ic\n    eger t[\"t\"] == \"isaret\" ve t[\"v\"] == \"[\":\n        ogeler = []\n        iken degil isaret_mi(st, \"]\"):\n            ekle(ogeler, ifade(st))\n            eger isaret_mi(st, \",\"):\n                ilerle(st)\n            degilse:\n                eger degil isaret_mi(st, \"]\"):\n                    hata(\"Satır \" + st[\"no\"] + \": ',' ya da ']' bekleniyordu\")\n        ilerle(st)\n        dondur {\"k\": \"liste\", \"ogeler\": ogeler}\n    hata(\"Satır \" + st[\"no\"] + \": beklenmeyen '\" + metin(t[\"v\"]) + \"'\")\n\nfonksiyon sonek(st, taban):\n    e = taban\n    iken isaret_mi(st, \".\") veya isaret_mi(st, \"[\"):\n        eger isaret_mi(st, \".\"):\n            ilerle(st)\n            nt = bak(st)\n            eger nt == bos veya nt[\"t\"] != \"ad\":\n                hata(\"Satır \" + st[\"no\"] + \": '.' işaretinden sonra bir ad gelmeli\")\n            ilerle(st)\n            e = {\"k\": \"ozellik\", \"nesne\": e, \"ad\": nt[\"v\"]}\n        degilse:\n            ilerle(st)\n            ix = ifade(st)\n            bekle_isaret(st, \"]\")\n            e = {\"k\": \"indeks\", \"nesne\": e, \"idx\": ix}\n    dondur e\n\nfonksiyon temel(st):\n    dondur sonek(st, birincil(st))\n\n# ---------- 3. AYRIŞTIRMA (SATIRLAR VE BLOKLAR) ----------\n\nfonksiyon alt_blok(satirlar, ptr, seviye, no):\n    eger ptr[\"i\"] >= uzunluk(satirlar):\n        hata(\"Satır \" + no + \": ':' işaretinden sonra girintili blok gerekli\")\n    yeni = satirlar[ptr[\"i\"]][\"g\"]\n    eger yeni <= seviye:\n        hata(\"Satır \" + no + \": ':' işaretinden sonra girintili blok gerekli\")\n    dondur blok_oku(satirlar, ptr, yeni)\n\nfonksiyon blok_oku(satirlar, ptr, seviye):\n    govde = []\n    iken ptr[\"i\"] < uzunluk(satirlar):\n        sat = satirlar[ptr[\"i\"]]\n        eger sat[\"g\"] < seviye:\n            dur\n        eger sat[\"g\"] > seviye:\n            hata(\"Satır \" + sat[\"no\"] + \": beklenmeyen girinti\")\n        ekle(govde, satir_oku(satirlar, ptr, seviye))\n    dondur govde\n\nfonksiyon satir_oku(satirlar, ptr, seviye):\n    sat = satirlar[ptr[\"i\"]]\n    ptr[\"i\"] = ptr[\"i\"] + 1\n    st = {\"tok\": sat[\"tok\"], \"i\": 0, \"no\": sat[\"no\"]}\n    t = bak(st)\n    eger t[\"t\"] == \"ad\":\n        k = t[\"v\"]\n        eger k == \"proje\" veya k == \"ortam\":\n            st[\"i\"] = uzunluk(st[\"tok\"])\n            dondur {\"k\": \"bildirim\"}\n        eger k == \"kisit\":\n            ilerle(st)\n            kt = bak(st)\n            eger kt == bos veya kt[\"t\"] != \"ad\":\n                hata(\"Satır \" + sat[\"no\"] + \": kisit'ten sonra bir ad gelmeli\")\n            ilerle(st)\n            satir_sonu(st)\n            dondur {\"k\": \"kisit\", \"ad\": kt[\"v\"]}\n        eger k == \"tekrar\":\n            ilerle(st)\n            sayt = bak(st)\n            eger sayt == bos veya sayt[\"t\"] != \"sayi\":\n                hata(\"Satır \" + sat[\"no\"] + \": tekrar sayısı bir sayı olmalı\")\n            ilerle(st)\n            eger degil kelime_mi(st, \"kez\"):\n                hata(\"Satır \" + sat[\"no\"] + \": 'kez' bekleniyordu\")\n            ilerle(st)\n            bekle_isaret(st, \":\")\n            satir_sonu(st)\n            dondur {\"k\": \"tekrar\", \"n\": sayt[\"v\"], \"govde\": alt_blok(satirlar, ptr, seviye, sat[\"no\"])}\n        eger k == \"yaz\":\n            ilerle(st)\n            e = ifade(st)\n            satir_sonu(st)\n            dondur {\"k\": \"yaz\", \"e\": e}\n        eger k == \"dur\" veya k == \"devam\":\n            ilerle(st)\n            satir_sonu(st)\n            dondur {\"k\": k}\n        eger k == \"dondur\":\n            ilerle(st)\n            eger bak(st) == bos:\n                dondur {\"k\": \"dondur\", \"e\": {\"k\": \"sabit\", \"v\": \"\"}}\n            e = ifade(st)\n            satir_sonu(st)\n            dondur {\"k\": \"dondur\", \"e\": e}\n        eger k == \"eger\":\n            ilerle(st)\n            c = ifade(st)\n            bekle_isaret(st, \":\")\n            satir_sonu(st)\n            govde = alt_blok(satirlar, ptr, seviye, sat[\"no\"])\n            degilse_govde = []\n            eger ptr[\"i\"] < uzunluk(satirlar):\n                sonraki = satirlar[ptr[\"i\"]]\n                eger sonraki[\"g\"] == seviye ve uzunluk(sonraki[\"tok\"]) == 2 ve sonraki[\"tok\"][0][\"v\"] == \"degilse\" ve sonraki[\"tok\"][1][\"v\"] == \":\":\n                    ptr[\"i\"] = ptr[\"i\"] + 1\n                    degilse_govde = alt_blok(satirlar, ptr, seviye, sonraki[\"no\"])\n            dondur {\"k\": \"eger\", \"c\": c, \"govde\": govde, \"degilse\": degilse_govde}\n        eger k == \"iken\":\n            ilerle(st)\n            c = ifade(st)\n            bekle_isaret(st, \":\")\n            satir_sonu(st)\n            dondur {\"k\": \"iken\", \"c\": c, \"govde\": alt_blok(satirlar, ptr, seviye, sat[\"no\"])}\n        eger k == \"fonksiyon\":\n            eger seviye != 0:\n                hata(\"Satır \" + sat[\"no\"] + \": fonksiyon sadece en üstte tanımlanabilir\")\n            ilerle(st)\n            adt = bak(st)\n            eger adt == bos veya adt[\"t\"] != \"ad\":\n                hata(\"Satır \" + sat[\"no\"] + \": fonksiyon adı bekleniyordu\")\n            ilerle(st)\n            bekle_isaret(st, \"(\")\n            par = []\n            iken degil isaret_mi(st, \")\"):\n                pt = bak(st)\n                eger pt == bos veya pt[\"t\"] != \"ad\":\n                    hata(\"Satır \" + sat[\"no\"] + \": parametre adı bekleniyordu\")\n                ekle(par, pt[\"v\"])\n                ilerle(st)\n                eger isaret_mi(st, \",\"):\n                    ilerle(st)\n            ilerle(st)\n            bekle_isaret(st, \":\")\n            satir_sonu(st)\n            dondur {\"k\": \"fon\", \"ad\": adt[\"v\"], \"par\": par, \"govde\": alt_blok(satirlar, ptr, seviye, sat[\"no\"])}\n        # atama: ad = ifade\n        sonraki_t = bos\n        eger st[\"i\"] + 1 < uzunluk(st[\"tok\"]):\n            sonraki_t = st[\"tok\"][st[\"i\"] + 1]\n        eger sonraki_t != bos ve sonraki_t[\"t\"] == \"isaret\" ve sonraki_t[\"v\"] == \"=\":\n            ilerle(st)\n            ilerle(st)\n            e = ifade(st)\n            satir_sonu(st)\n            dondur {\"k\": \"ata\", \"ad\": k, \"e\": e}\n    e = ifade(st)\n    satir_sonu(st)\n    dondur {\"k\": \"ifade\", \"e\": e}\n\nfonksiyon program_oku(kod):\n    satirlar = satirlara_bol(kod)\n    ptr = {\"i\": 0}\n    dugumler = blok_oku(satirlar, ptr, 0)\n    fonlar = {}\n    komutlar = []\n    her d icinde dugumler:\n        eger d[\"k\"] == \"fon\":\n            fonlar[d[\"ad\"]] = d\n        degilse:\n            ekle(komutlar, d)\n    dondur {\"komutlar\": komutlar, \"fonlar\": fonlar}\n\n# ---------- 4. ÇALIŞTIRMA ----------\n\nfonksiyon islem(op, a, b):\n    eger op == \"+\":\n        dondur a + b\n    eger op == \"-\":\n        dondur a - b\n    eger op == \"*\":\n        dondur a * b\n    eger op == \"/\":\n        dondur a / b\n    eger op == \"%\":\n        dondur a % b\n    eger op == \"==\":\n        dondur a == b\n    eger op == \"!=\":\n        dondur a != b\n    eger op == \"<\":\n        dondur a < b\n    eger op == \">\":\n        dondur a > b\n    eger op == \"<=\":\n        dondur a <= b\n    eger op == \">=\":\n        dondur a >= b\n    hata(\"Bilinmeyen işlem: \" + op)\n\nfonksiyon yerlesik_cagri(ad, argler, kwler):\n    eger ad == \"uzunluk\":\n        dondur uzunluk(argler[0])\n    eger ad == \"sayi\":\n        dondur sayi(argler[0])\n    eger ad == \"metin\":\n        dondur metin(argler[0])\n    eger ad == \"buyuk\":\n        dondur buyuk(argler[0])\n    eger ad == \"kucuk\":\n        dondur kucuk(argler[0])\n    eger ad == \"parca\":\n        dondur parca(argler[0], argler[1], argler[2])\n    eger ad == \"bul\":\n        dondur bul(argler[0], argler[1])\n    eger ad == \"planlayici\":\n        dondur planlayici(argler[0])\n    eger ad == \"kodlayici\":\n        plan = \"\"\n        eger uzunluk(argler) >= 2:\n            plan = argler[1]\n        dosya = \"index.html\"\n        eger var_mi(kwler, \"dosya\"):\n            dosya = kwler[\"dosya\"]\n        geri = \"\"\n        eger var_mi(kwler, \"geri\"):\n            geri = kwler[\"geri\"]\n        dondur kodlayici(argler[0], plan, dosya=dosya, geri=geri)\n    eger ad == \"test\":\n        dondur test(argler[0], argler[1])\n    eger ad == \"kaydet\":\n        dondur kaydet(argler[0], argler[1])\n    hata(\"İç program: bilinmeyen fonksiyon '\" + ad + \"'\")\n\nfonksiyon kullanici_cagri(fon, argler, gen):\n    eger uzunluk(argler) != uzunluk(fon[\"par\"]):\n        hata(\"İç program: \" + fon[\"ad\"] + \" \" + uzunluk(fon[\"par\"]) + \" parametre bekliyor\")\n    ort = {}\n    i = 0\n    iken i < uzunluk(argler):\n        ort[fon[\"par\"][i]] = argler[i]\n        i = i + 1\n    r = blok_calistir(fon[\"govde\"], ort, gen)\n    eger r[\"s\"] == \"dondur\":\n        dondur r[\"v\"]\n    dondur \"\"\n\nfonksiyon degerle(e, ort, gen):\n    k = e[\"k\"]\n    eger k == \"sabit\":\n        dondur e[\"v\"]\n    eger k == \"ad\":\n        eger var_mi(ort, e[\"ad\"]):\n            dondur ort[e[\"ad\"]]\n        hata(\"İç program: '\" + e[\"ad\"] + \"' değişkeni tanımlı değil\")\n    eger k == \"eksi\":\n        dondur 0 - degerle(e[\"e\"], ort, gen)\n    eger k == \"degil\":\n        dondur degil degerle(e[\"e\"], ort, gen)\n    eger k == \"mantik\":\n        sol = degerle(e[\"l\"], ort, gen)\n        eger e[\"op\"] == \"veya\":\n            eger sol:\n                dondur sol\n            dondur degerle(e[\"r\"], ort, gen)\n        eger sol:\n            dondur degerle(e[\"r\"], ort, gen)\n        dondur sol\n    eger k == \"ikili\":\n        sol = degerle(e[\"l\"], ort, gen)\n        sag = degerle(e[\"r\"], ort, gen)\n        dondur islem(e[\"op\"], sol, sag)\n    eger k == \"cagri\":\n        argler = []\n        her a icinde e[\"args\"]:\n            ekle(argler, degerle(a, ort, gen))\n        eger var_mi(gen[\"fonlar\"], e[\"ad\"]):\n            dondur kullanici_cagri(gen[\"fonlar\"][e[\"ad\"]], argler, gen)\n        kwdeger = {}\n        her kn icinde anahtarlar(e[\"kw\"]):\n            kwdeger[kn] = degerle(e[\"kw\"][kn], ort, gen)\n        dondur yerlesik_cagri(e[\"ad\"], argler, kwdeger)\n    eger k == \"liste\":\n        sonucl = []\n        her og icinde e[\"ogeler\"]:\n            ekle(sonucl, degerle(og, ort, gen))\n        dondur sonucl\n    eger k == \"ozellik\":\n        nesne = degerle(e[\"nesne\"], ort, gen)\n        eger tip(nesne) != \"sozluk\":\n            hata(\"İç program: '\" + e[\"ad\"] + \"' özelliği için sözlük gerekir\")\n        eger var_mi(nesne, e[\"ad\"]):\n            dondur nesne[e[\"ad\"]]\n        hata(\"İç program: '\" + e[\"ad\"] + \"' anahtarı yok\")\n    eger k == \"indeks\":\n        nesne = degerle(e[\"nesne\"], ort, gen)\n        sira = degerle(e[\"idx\"], ort, gen)\n        dondur nesne[sira]\n    hata(\"İç program: bilinmeyen ifade türü \" + k)\n\nfonksiyon bos_sonuc():\n    dondur {\"s\": \"\", \"v\": \"\"}\n\nfonksiyon satir_calistir(dg, ort, gen):\n    k = dg[\"k\"]\n    eger k == \"yaz\":\n        yaz degerle(dg[\"e\"], ort, gen)\n        dondur bos_sonuc()\n    eger k == \"ata\":\n        ort[dg[\"ad\"]] = degerle(dg[\"e\"], ort, gen)\n        dondur bos_sonuc()\n    eger k == \"ifade\":\n        degerle(dg[\"e\"], ort, gen)\n        dondur bos_sonuc()\n    eger k == \"eger\":\n        eger degerle(dg[\"c\"], ort, gen):\n            dondur blok_calistir(dg[\"govde\"], ort, gen)\n        dondur blok_calistir(dg[\"degilse\"], ort, gen)\n    eger k == \"iken\":\n        iken degerle(dg[\"c\"], ort, gen):\n            r = blok_calistir(dg[\"govde\"], ort, gen)\n            eger r[\"s\"] == \"dur\":\n                dur\n            eger r[\"s\"] == \"dondur\":\n                dondur r\n        dondur bos_sonuc()\n    eger k == \"bildirim\":\n        dondur bos_sonuc()\n    eger k == \"kisit\":\n        kisit_ekle(dg[\"ad\"])\n        dondur bos_sonuc()\n    eger k == \"tekrar\":\n        tur = 0\n        iken tur < dg[\"n\"]:\n            tur = tur + 1\n            r = blok_calistir(dg[\"govde\"], ort, gen)\n            eger r[\"s\"] == \"dur\":\n                dur\n            eger r[\"s\"] == \"dondur\":\n                dondur r\n        dondur bos_sonuc()\n    eger k == \"dur\":\n        dondur {\"s\": \"dur\", \"v\": \"\"}\n    eger k == \"devam\":\n        dondur {\"s\": \"devam\", \"v\": \"\"}\n    eger k == \"dondur\":\n        dondur {\"s\": \"dondur\", \"v\": degerle(dg[\"e\"], ort, gen)}\n    hata(\"İç program: bilinmeyen komut türü \" + k)\n\nfonksiyon blok_calistir(govde, ort, gen):\n    i = 0\n    iken i < uzunluk(govde):\n        r = satir_calistir(govde[i], ort, gen)\n        eger r[\"s\"] != \"\":\n            dondur r\n        i = i + 1\n    dondur bos_sonuc()\n\nfonksiyon calistir_program(kod):\n    prog = program_oku(kod)\n    gen = {\"fonlar\": prog[\"fonlar\"]}\n    ort = {}\n    blok_calistir(prog[\"komutlar\"], ort, gen)\n\n# ---------- ÇALIŞTIR ----------\ncalistir_program(girdi())\n", "girdi": "proje \"Sayaç\"\nortam tarayici\nkisit tek_dosya\nkisit modul_yok\n\n# Kendi fonksiyonumuz: kodu test ettirip sonucu döndürür\nfonksiyon dene(istek, kod):\n    sonuc = test(istek, kod)\n    dondur sonuc\n\nistek = \"Basit bir sayaç uygulaması yap: artı, eksi ve sıfırla düğmeleri olsun, telefonda güzel görünsün.\"\nplan = planlayici(istek)\nkaydet(plan, \"plan.txt\")\nkod = kodlayici(istek, plan, dosya=\"index.html\")\n\ntur = 1\ntekrar 3 kez:\n    yaz \"Tur \" + tur + \" başladı\"\n    sonuc = dene(istek, kod)\n    eger sonuc.onay:\n        yaz \"Onaylandı\"\n        dur\n    degilse:\n        kod = kodlayici(istek, plan, dosya=\"index.html\", geri=sonuc.sebep)\n    tur = tur + 1\n"}};
+$("ornek").onchange = function () {
+  var k = $("ornek").value, o = ORNEKLER[k];
+  if (o) { $("prog").value = o.prog; $("girdi").value = o.girdi; save("prog6", o.prog); save("girdi6", o.girdi); $("log").textContent = ""; }
+  $("ornek").value = "";
+};
+var saved = load("prog6"); if (saved) $("prog").value = saved;
+var savedG = load("girdi6"); if (savedG) $("girdi").value = savedG;
+function showErrors(errors) {
+  addLog(errors.length + " hata bulundu, program çalıştırılmadı:", "warn");
+  errors.forEach(function (m) { addLog(m, "warn"); });
+}
+$("check").onclick = function () {
+  save("prog6", $("prog").value); save("girdi6", $("girdi").value); $("log").textContent = "";
+  var r = parseProgram($("prog").value);
+  if (r.errors.length) { showErrors(r.errors); return; }
+  addLog("Program geçerli ✓  (" + r.prog.stmts.length + " komut, fonksiyon çağrıları ve değişkenler denetlendi)", "ok");
+};
+$("run").onclick = async function () {
+  var p = $("prov").value;
+  save("key_" + p, $("key").value.trim()); save("model_" + p, $("model").value.trim());
+  save("prog6", $("prog").value); save("girdi6", $("girdi").value); $("log").textContent = "";
+  var r = parseProgram($("prog").value);
+  if (r.errors.length) { showErrors(r.errors); return; }
+  $("run").disabled = true; $("check").disabled = true;
+  try { await runProgram(r.prog); } catch (e) { addLog("Durdu: " + (e.message || e), "warn"); }
+  $("run").disabled = false; $("check").disabled = false;
+};
+/* ---------- Dosya ve uygulama ---------- */
+function dosyaAdi(src) {
+  var m = src.match(/^\s*proje\s+"([^"]+)"/m);
+  var ad = (m ? m[1] : "program").replace(/[^A-Za-z0-9ÇĞİÖŞÜçğıöşü _-]/g, "").trim().replace(/\s+/g, "-");
+  return (ad || "program") + ".ekip";
+}
+function ekipMetni(src) { return /^\s*#\s*ekip-dili/.test(src) ? src : "# ekip-dili\n" + src; }
+function yukle(metin, ad) {
+  $("prog").value = metin.replace(/^\s*# ekip-dili[^\n]*\r?\n/, "");
+  save("prog6", $("prog").value); $("log").textContent = ""; addLog("Açıldı: " + ad, "ok");
+}
+$("kaydetp").onclick = function () {
+  var src = $("prog").value, ad = dosyaAdi(src);
+  var blob = new Blob([ekipMetni(src)], { type: "text/plain;charset=utf-8" });
+  var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = ad;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  $("log").textContent = ""; addLog("Kaydedildi: " + ad + " (İndirilenler klasörüne)", "ok");
+};
+$("ac").onclick = function () { $("dosya").click(); };
+$("dosya").onchange = function () {
+  var f = $("dosya").files && $("dosya").files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onload = function () { yukle(String(r.result), f.name); $("dosya").value = ""; };
+  r.readAsText(f);
+};
+(function () {
+  var q = new URLSearchParams(location.search), t = q.get("text") || q.get("program");
+  if (t) yukle(t, "paylaşılan metin");
+  if ("launchQueue" in window) window.launchQueue.setConsumer(async function (p) {
+    if (!p.files || !p.files.length) return;
+    var f = await p.files[0].getFile(); yukle(await f.text(), f.name);
+  });
+})();
+var kurOlayi = null;
+window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); kurOlayi = e; $("kur").hidden = false; });
+window.addEventListener("appinstalled", function () { $("kur").hidden = true; });
+$("kur").onclick = async function () {
+  if (!kurOlayi) return;
+  kurOlayi.prompt();
+  try { await kurOlayi.userChoice; } catch (x) {}
+  kurOlayi = null; $("kur").hidden = true;
+};
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) { navigator.serviceWorker.register("sw.js").catch(function () {}); }
+renderFiles();
+</script>
+</body>
+</html>
